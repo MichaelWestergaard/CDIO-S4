@@ -1,10 +1,11 @@
 package DTO;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class Robot extends Point {
-
+	
 	List<Ball> collectedBalls = new ArrayList<Ball>();
 	
 	public Robot(double x, double y) {
@@ -25,6 +26,11 @@ public class Robot extends Point {
 
 	public void collectBall(Ball ball) {
 		collectedBalls.add(ball);
+	}
+
+	@Override
+	public String toString() {
+		return "Robot coordinates = " + Arrays.toString(getCoordinates()) ;
 	}
 	
 }
