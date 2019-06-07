@@ -60,7 +60,7 @@ public class MapController {
 
 	public int[][] locateDeliveryPoints(int[][] map) {
 		System.out.println(coordinates);
-		return coord;
+		return map; //ændrer denne så den returnere 
 	}
 
 	public void findShortestPath() {
