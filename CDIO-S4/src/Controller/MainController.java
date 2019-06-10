@@ -2,8 +2,10 @@ package Controller;
 
 public class MainController {
 
-	MapController mapController = new MapController();
 	RobotController robotController = new RobotController();
+	CamController camController = new CamController();
+	MapController mapController = new MapController(CamController.getMap());
+
 	//Ny klasse der henter input fra kamera - skal bruges i robot og map
 		
 	public void start() {
