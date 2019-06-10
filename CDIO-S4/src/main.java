@@ -3,7 +3,7 @@ import Controller.MapController;
 
 public class main {
 
-	static int[][] map1 = { 						//ændre senere til at læse fil
+	static int[][] map1 = { 						//ï¿½ndre senere til at lï¿½se fil
 			{-1,-1,-1,-1,-1,-1,-1,-1,-1,-1},
 			{-1, 1, 1, 0, 0, 0, 0, 0, 9, -1},
 			{-1, 1, 1, 0, 0, 0, 0, 0, 0, -1},
@@ -14,7 +14,7 @@ public class main {
 			{-1,-1,-1,-1,-1,-1,-1,-1,-1,-1}
 	};
 	
-	static int[][] map5 = { 						//ændre senere til at læse fil
+	static int[][] map5 = { 						//ï¿½ndre senere til at lï¿½se fil
 			{-1,0,-1,-1,-1,-1,-1,-1,-1,-1},
 			{-1, 1, 1, 0, 0, 0, 0, 0, 9, -1},
 			{-1, 1, 1, 0, 0, 0, 0, 0, 0, -1},

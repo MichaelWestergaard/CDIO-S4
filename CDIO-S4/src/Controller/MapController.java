@@ -3,7 +3,6 @@ package Controller;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.List;
 
 import DTO.Ball;
@@ -27,7 +26,7 @@ public class MapController {
 		boolean ballStatus = false;
 
 
-		for (int x = 0; x < map.length; x++) { //rækkerne
+		for (int x = 0; x < map.length; x++) { //rï¿½kkerne
 			for (int y = 0; y < map[x].length; y++) { //kolonnerne
 				if(map[x][y] == 9) {
 					robot = new Robot(x,y);
@@ -49,13 +48,45 @@ public class MapController {
 				}
 			}	
 		}
-		findShortestPath();
+		findShortestPath();	
 	}
-	//
+	
+	int[][] map = null;
+	public MapController(int[][] loadMap) {
+		//det her array er nu bestemt ud fra billedet fra opencv.
+		map = loadMap;
+		
+		System.out.println("int[][] map = new int[][]{");
+		for (int i = 0; i < 180; i++) {
+			System.out.print("{ ");
+			for (int j = 0; j < 120; j++) {
+				System.out.print(map[i][j] + "");
+				if(j+1 != 120) {
+					System.out.print(", ");
+				}
+			}
+			System.out.print(" }");
+			if(i+1 != 180) {
+				System.out.print(",");
+			}
+			System.out.println();
+		}
+		System.out.println("};");
+	}
+	
+	public MapController() {
+		// TODO Auto-generated constructor stub
+	}
+
+	/*
+	private void locateBalls() {
+		//indsÃ¦t dem i balls arraylist
+	}*/
+	
 
 	public int[][] locateDeliveryPoints(int[][] map) {
 		//System.out.println(coordinates);
-		return map; //ændrer denne så den returnere 
+		return map; 
 	}
 
 	public void findShortestPath() {
@@ -103,10 +134,10 @@ public class MapController {
 	class Sort implements Comparator<Point>{
 
 		@Override
-		public int compare(Point point1, Point point2) { //skal sorteres på den rigtige måde
+		public int compare(Point point1, Point point2) { //skal sorteres pï¿½ den rigtige mï¿½de
 			//System.out.println(point1 + " " + point2 + " " + (robot.dist(point1) - robot.dist(point2)));
 			
-			//tager ikke højde for en ny rute efter at den har kommet og taget bolden
+			//tager ikke hï¿½jde for en ny rute efter at den har kommet og taget bolden
 			
 			if(robot.dist(point1) < robot.dist(point2)) {
 				return -1;
@@ -119,6 +150,5 @@ public class MapController {
 		}
 
 	}
-
 
 }
