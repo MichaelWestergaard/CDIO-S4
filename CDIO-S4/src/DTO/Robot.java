@@ -15,6 +15,8 @@ public class Robot extends Point {
 	public Robot() {
 		super(0,0);
 	}
+	
+	
 
 	public List<Ball> getCollectedBalls() {
 		return collectedBalls;

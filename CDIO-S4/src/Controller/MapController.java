@@ -1,10 +1,14 @@
 package Controller;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 
 import DTO.Ball;
 import DTO.DeliveryPoint;
+import DTO.Point;
 import DTO.Robot;
 
 public class MapController {
@@ -15,13 +19,13 @@ public class MapController {
 	List<Ball> shortestPath = new ArrayList<Ball>();
 
 	ArrayList<Ball> coordinates = new ArrayList<Ball>();
-	
+
 	Robot robot;
-	
-	public ArrayList<Ball> findBalls(int[][] map) {
+
+	public void findBalls(int[][] map) {
 		//int ballcounter;
 		boolean ballStatus = false;
-		
+
 
 		for (int x = 0; x < map.length; x++) { //rækkerne
 			for (int y = 0; y < map[x].length; y++) { //kolonnerne
@@ -29,42 +33,92 @@ public class MapController {
 					robot = new Robot(x,y);
 				}
 				if(map[x][y] == 1) {
-					if(map[x+1][y] == 1 && map[x][y+1] == 1 && map[x+1][y+1] == 1) {
+					if(map[x+3][y] == 1 && map[x][y+3] == 1 && map[x+3][y+3] == 1) {
 
 						ballStatus = true;
-						
+
 						//System.out.println(map[x][y]);
-						
-						map[x][y] = 2;
-						map[x+1][y] = 2;
-						map[x][y+1] = 2;
-						map[x+1][y+1] = 2;
+
+						map[x][y] = 9;
+						map[x+3][y] = 0;
+						map[x][y+3] = 0;
+						map[x+3][y+3] = 0;
 
 						coordinates.add(new Ball(x,y));
-						//System.out.println(x + " , " + y);
 					}
 				}
-
 			}	
 		}
-		
-		//System.out.println(map);
-		System.out.println(robot);
-		for(Ball ball: coordinates) {
-			System.out.println(ball);
-			
-		}
-		return coordinates;
+		findShortestPath();
 	}
-
+	//
 
 	public int[][] locateDeliveryPoints(int[][] map) {
-		System.out.println(coordinates);
+		//System.out.println(coordinates);
 		return map; //ændrer denne så den returnere 
 	}
 
 	public void findShortestPath() {
+		Collections.sort(coordinates, new Sort());
+		//System.out.println(coordinates);
+		Ball ball;
+		
+		//Iterator<Ball> iterator = coordinates.iterator();
+		
+		int iterator = coordinates.size();
+		
+		for(int i = 0; i < iterator; i++) {
+			Collections.sort(coordinates, new Sort());
+			double[] test = coordinates.get(0).getCoordinates();
+			System.out.println("for slut"+ coordinates.size());
+
+			for(int j = 0; j < coordinates.size(); j++) {
+				System.out.println(coordinates.get(j)+ " dist = " + robot.dist(coordinates.get(j)));
+				}
+			System.out.println("for slut"+ coordinates.size());
+
+			robot.setCoordinates(test[0], test[1]);
+			
+			
+			//System.out.println(robot + " -> " + ball + " dist = " + robot.dist(ball));
+			
+			coordinates.remove(0);
+			System.out.println("for slut"+ coordinates.size());
+			
+			
+			//while(iterator.hasNext()) {
+			/*ball = iterator.next();
+			
+			coordinates.remove(ball);
+			robot.setCoordinates(ball.getCoordinates()[0], ball.getCoordinates()[1]);
+			Collections.sort(coordinates, new Sort());
+			//Collections.sort(coordinates, new Sort());
+			//System.out.println(coordinates);
+			iterator = coordinates.iterator();*/
+		}
+		
+	}
+
+
+	class Sort implements Comparator<Point>{
+
+		@Override
+		public int compare(Point point1, Point point2) { //skal sorteres på den rigtige måde
+			//System.out.println(point1 + " " + point2 + " " + (robot.dist(point1) - robot.dist(point2)));
+			
+			//tager ikke højde for en ny rute efter at den har kommet og taget bolden
+			
+			if(robot.dist(point1) < robot.dist(point2)) {
+				return -1;
+			}
+			if(robot.dist(point2) < robot.dist(point1)) {
+				return 1;
+			}
+			
+			return 0;
+		}
 
 	}
+
 
 }
