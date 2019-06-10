@@ -23,8 +23,13 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
+import javax.swing.SwingWorker;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
+import javax.xml.bind.Unmarshaller;
 
 import org.opencv.calib3d.Calib3d;
 import org.opencv.core.Core;
@@ -40,12 +45,19 @@ import org.opencv.core.Size;
 import org.opencv.highgui.HighGui;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.videoio.VideoCapture;
 
 import DTO.Ball;
+import DTO.Camera;
 
 public class CamController {
 
 	private static JFrame frame;
+	private JFrame videoFrame;
+	
+    private JLabel imgCaptureLabel;
+    private JLabel imgDetectionLabel;
+	
     private static JLabel imgCaptureLabelReal;
     private static JLabel imgCaptureLabelMask;
     
@@ -68,116 +80,285 @@ public class CamController {
 	
 	static Mat circles;
 	static Mat mask;
+	Mat imageWithGrid;
 	
-	public CamController() {
+	private VideoCapture videoCapture;
+    private Mat matFrame;
+    private CaptureTask captureTask;
+    private Camera cameraSettings;
+    private boolean useCam = true;
+    
+    private FrameHelper frameHelper = new FrameHelper();
+	
+	public CamController(boolean useCam) {
+		this.useCam = useCam;
+		loadSettingsFile();
 		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
-		
-		img = Imgcodecs.imread("images/2.jpg");
-	
-	//Imgproc.resize(img, img, new Size(900, 900),0, 0, Imgproc.INTER_AREA);
-			
-	frame = new JFrame("Video");
-    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-    
-    slider.setValue(0);
-    slider1.setValue(0);
-    slider2.setValue(255);
-    slider3.setValue(180);
-    slider4.setValue(0);
-    slider5.setValue(0);
-    slider6.setValue(10);
-    slider7.setValue(15);
-	
-    findWalls();
-    //findWallsVirkerIKorrektBelysning();
-    /*gg();
-    
-	JPanel framePanel = new JPanel();
+		matFrame = new Mat();
 
-    imgCaptureLabelReal = new JLabel(new ImageIcon(HighGui.toBufferedImage(circles)));
-    framePanel.add(imgCaptureLabelReal);
-    imgCaptureLabelMask = new JLabel(new ImageIcon(HighGui.toBufferedImage(mask)));
-    framePanel.add(imgCaptureLabelMask);
-    frame.getContentPane().add(framePanel, BorderLayout.CENTER);
-    
-    JPanel slidersLower = new JPanel();
-
-    slidersLower.add(slider);
-    slidersLower.add(slider1);
-    slidersLower.add(slider2);
-    slidersLower.add(slider3);
-    slidersLower.add(slider4);
-    slidersLower.add(slider5);
-    slidersLower.add(slider6);
-    slidersLower.add(slider7);
-    
-    JButton button = new JButton("Get Settings");
-    
-    slidersLower.add(button);
-    
-    JButton buttonCoord = new JButton("Get Coordinates");
-    
-    slidersLower.add(buttonCoord);
-          
-    frame.getContentPane().add(slidersLower, BorderLayout.SOUTH);
-    
-    ChangeListener listener = new ChangeListener() {
-		
-		@Override
-		public void stateChanged(ChangeEvent e) {
-			gg();
-
-			imgCaptureLabelReal.setIcon(new ImageIcon(HighGui.toBufferedImage(circles)));
-			imgCaptureLabelMask.setIcon(new ImageIcon(HighGui.toBufferedImage(mask)));
-            frame.repaint();
+		if(useCam) {
+			videoCapture = new VideoCapture(0);
+	        if (!videoCapture.isOpened()) {
+	            System.err.println("Cannot open camera");
+	            System.exit(0);
+	        }
+	        if (!videoCapture.read(matFrame)) {
+	            System.err.println("Cannot read camera stream.");
+	            System.exit(0);
+	        }
+		} else {
+			matFrame = Imgcodecs.imread("images/2.jpg");
 		}
-	};
-	
-    slider.addChangeListener(listener);
-    slider1.addChangeListener(listener);
-    slider2.addChangeListener(listener);
-    slider3.addChangeListener(listener);
-    slider4.addChangeListener(listener);
-    slider5.addChangeListener(listener);
-    slider6.addChangeListener(listener);
-    slider7.addChangeListener(listener);
-    
-    button.addActionListener(new ActionListener() {
-		
-		@Override
-		public void actionPerformed(ActionEvent e) {
-			System.out.println("Scalar lower = new Scalar(" + slider.getValue() + ", " + slider1.getValue() + ", " + slider2.getValue() + ");");
-			System.out.println("Scalar upper = new Scalar(" + slider3.getValue() + ", " + slider4.getValue() + ", " + slider5.getValue() + ");");
-			System.out.println("double minArea = Math.PI * (" + slider6.getValue() + " * 0.9f) * (" + slider6.getValue() + " * 0.9f);");
-			System.out.println("double maxArea = Math.PI * (" + slider7.getValue() + " * 1.1f) * (" + slider7.getValue() + " * 1.1f);");
-		}
-	});
-    
-    buttonCoord.addActionListener(new ActionListener() {
-		
-		@Override
-		public void actionPerformed(ActionEvent e) {
-			String output = "static Waypoint[] coordinates = {";
-			for (int i = 0; i < balls.size(); i++) {
-				String newWaypoint = " new Waypoint(" + balls.get(i).x + ", " + balls.get(i).y + ")";
-				if(!output.contains(newWaypoint)) {
-					output += newWaypoint;
-					if(i+1 != balls.size())
-						output += ",";
-				}
-
-			}
-			output += "};";
-			System.out.println(output);
-		}
-	});
-
-    frame.pack();
-    frame.setVisible(true);
-    */
 	}
 	
-	private static void gg() {
+	private void loadSettingsFile() {
+		try {
+			File file = new File("camera_settings.xml");
+			JAXBContext jaxbContext = JAXBContext.newInstance(Camera.class);
+
+			Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
+			cameraSettings = (Camera) jaxbUnmarshaller.unmarshal(file);
+			
+		} catch (JAXBException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	public void startUp() {
+		videoFrame = new JFrame("Video");
+		videoFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame = new JFrame("CamController");
+	    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		JButton recalibrateBtn = new JButton("Kalibrer Kamera");
+	    JButton useDefaultBtn = new JButton("Brug Standard");
+	    
+	    recalibrateBtn.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				calibrateCamera();
+				frame.setVisible(false);
+				frame.dispose();
+			}
+		});
+	    
+	    useDefaultBtn.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if(useCam) {
+					javax.swing.SwingUtilities.invokeLater(new Runnable() {
+			            @Override
+			            public void run() {
+			                captureTask = new CaptureTask();
+			                captureTask.execute();
+			            }
+			        });
+				}
+
+				frame.setVisible(false);
+				frame.dispose();
+				
+				Image img = HighGui.toBufferedImage(matFrame);
+		        
+		        JPanel framePanel = new JPanel();
+		        imgCaptureLabel = new JLabel(new ImageIcon(img));
+		        framePanel.add(imgCaptureLabel);
+		        imgDetectionLabel = new JLabel(new ImageIcon(img));
+		        framePanel.add(imgDetectionLabel);
+		        videoFrame.getContentPane().add(framePanel, BorderLayout.CENTER);
+				updateFrame();
+				videoFrame.pack();
+				videoFrame.setVisible(true);
+			}
+		});
+	    
+	    JPanel panel = new JPanel();
+	    panel.add(recalibrateBtn);
+	    panel.add(useDefaultBtn);
+	    frame.add(panel, BorderLayout.CENTER);
+	    frame.pack();
+	    frame.setLocationRelativeTo(null);
+	    frame.setVisible(true);
+	}
+	
+	private void calibrateCamera() {
+        // Set up the content pane.
+        Image img = HighGui.toBufferedImage(matFrame);
+        
+        JPanel framePanel = new JPanel();
+        imgCaptureLabel = new JLabel(new ImageIcon(img));
+        framePanel.add(imgCaptureLabel);
+        imgDetectionLabel = new JLabel(new ImageIcon(img));
+        framePanel.add(imgDetectionLabel);
+        videoFrame.getContentPane().add(framePanel, BorderLayout.CENTER);
+        
+        JFrame menu = frameHelper.calibrationMenu();
+        
+        frameHelper.minBallSize.setValue(cameraSettings.getMinBallSize());
+        frameHelper.maxBallSize.setValue(cameraSettings.getMaxBallSize());
+        frameHelper.lowHue.setValue(cameraSettings.getLowHue());
+        frameHelper.maxHue.setValue(cameraSettings.getMaxHue());
+        frameHelper.lowSat.setValue(cameraSettings.getLowSat());
+        frameHelper.maxSat.setValue(cameraSettings.getMaxSat());
+        frameHelper.lowVal.setValue(cameraSettings.getLowVal());
+        frameHelper.maxVal.setValue(cameraSettings.getMaxVal());
+        updateFrame();
+
+        ChangeListener changeListener = new ChangeListener() {
+			
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				cameraSettings.setMinBallSize(frameHelper.minBallSize.getValue());
+				cameraSettings.setMaxBallSize(frameHelper.maxBallSize.getValue());
+				cameraSettings.setLowHue(frameHelper.lowHue.getValue());
+				cameraSettings.setMaxHue(frameHelper.maxHue.getValue());
+				cameraSettings.setLowSat(frameHelper.lowSat.getValue());
+				cameraSettings.setMaxSat(frameHelper.maxSat.getValue());
+				cameraSettings.setLowVal(frameHelper.lowVal.getValue());
+				cameraSettings.setMaxVal(frameHelper.maxVal.getValue());
+				
+				updateFrame();
+			}
+			
+		};
+		
+		frameHelper.setListener(changeListener);
+        
+        frameHelper.save.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				Camera camera = new Camera(frameHelper.minBallSize.getValue(), frameHelper.maxBallSize.getValue(), frameHelper.lowHue.getValue(), frameHelper.maxHue.getValue(), frameHelper.lowSat.getValue(), frameHelper.maxSat.getValue(), frameHelper.lowVal.getValue(), frameHelper.maxVal.getValue());
+				
+				try {
+					File file = new File("camera_settings.xml");
+					JAXBContext jaxbContext = JAXBContext.newInstance(Camera.class);
+					Marshaller jaxbMarshaller = jaxbContext.createMarshaller();
+
+					// output pretty printed
+					jaxbMarshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
+
+					jaxbMarshaller.marshal(camera, file);
+					jaxbMarshaller.marshal(camera, System.out);
+				} catch (JAXBException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+			}
+		});
+        
+        menu.setVisible(true);
+        
+        videoFrame.pack();
+        videoFrame.setLocationRelativeTo(null);
+        videoFrame.setVisible(true);
+        
+		if(useCam) {
+			javax.swing.SwingUtilities.invokeLater(new Runnable() {
+	            @Override
+	            public void run() {
+	                captureTask = new CaptureTask();
+	                captureTask.execute();
+	            }
+	        });
+		}
+	}
+	
+	private void updateFrame() {
+
+		img = matFrame.clone();
+		/*
+		Mat dst = new Mat();
+		Mat edges = new Mat();
+		List<MatOfPoint> contoursWalls = new ArrayList<MatOfPoint>();
+		
+		Imgproc.GaussianBlur(img, dst, new Size(3,3), 0);
+		//TODO: skal måske være med i kalibrering
+		Mat element = Imgproc.getStructuringElement(Imgproc.CV_SHAPE_RECT, new Size(2 * 8 + 1, 2 * 8 + 1), new Point(8, 8));
+		
+		int lowThresh = 90;
+
+		Imgproc.morphologyEx(dst, dst, Imgproc.MORPH_CLOSE, element);
+		Imgproc.Canny(dst, edges, lowThresh, lowThresh*3, 3, true);
+
+		
+		Imgproc.findContours(edges, contoursWalls, new Mat(), Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_NONE);
+
+		
+		double areaLast = 0;
+		double crossArea = 0.0;
+		int crossI = 0;
+		Point[] verticesLast = null;
+		RotatedRect rectLast = null;
+		
+		for (int i = 0; i < contoursWalls.size(); i++) {
+			
+			MatOfPoint2f temp = new MatOfPoint2f(contoursWalls.get(i).toArray());
+			MatOfPoint2f approxCurve = new MatOfPoint2f();
+			Imgproc.approxPolyDP(temp, approxCurve, Imgproc.arcLength(temp, true) * 0.02, true);
+			
+			if(approxCurve.total() == 12) {
+				double crossAreaLocal = Imgproc.contourArea(approxCurve);
+				if(crossAreaLocal > crossArea)
+					crossI = i;
+			}
+			
+			RotatedRect rect = Imgproc.minAreaRect(new MatOfPoint2f(contoursWalls.get(i).toArray()));
+			Point[] vertices = new Point[4];  
+	        rect.points(vertices);
+	        
+			double area = rect.size.width * rect.size.height;
+			
+			if(area > areaLast) {
+	        	verticesLast = vertices;
+		        rectLast = rect;
+				areaLast = area;
+			}
+		}
+		
+		if(verticesLast != null && rectLast != null) {
+			for(int j = 0; j < 4; j++) {
+				Imgproc.line(img, verticesLast[j], verticesLast[(j+1)%4], new Scalar(0,255,0));
+				Imgproc.putText(img, "Corner", verticesLast[j], 2, 0.5, new Scalar(250,250,250));
+			}
+		}
+		
+		if(crossI > 0) {
+			System.out.println(contoursWalls.get(crossI).rows());
+			Imgproc.drawContours(img, contoursWalls, crossI, new Scalar(255,0,0), Imgproc.FILLED);
+		}
+		
+		//Warp
+		
+		Mat src_mat=new Mat(4,1,CvType.CV_32FC2);
+	    Mat dst_mat=new Mat(4,1,CvType.CV_32FC2);
+
+	    src_mat.put(0, 0, verticesLast[2].x, verticesLast[2].y, verticesLast[3].x, verticesLast[3].y, verticesLast[1].x, verticesLast[1].y, verticesLast[0].x, verticesLast[0].y);
+	    dst_mat.put(0, 0, 0.0, 0.0, rectLast.size.height, 0.0, 0.0, rectLast.size.width, rectLast.size.height, rectLast.size.width);
+	    Mat perspectiveTransform = Imgproc.getPerspectiveTransform(src_mat, dst_mat);
+
+	    Imgproc.warpPerspective(img, img, perspectiveTransform, new Size(rectLast.size.height, rectLast.size.width));
+	    */
+	    mask = createMask();
+		circles = img.clone();
+        findBalls(mask);
+        //findRobot(mask);
+
+        for (Ball ball : balls) {
+			Imgproc.circle(img, new Point(ball.x, ball.y), 20, new Scalar(0, 0, 255));
+			Imgproc.putText(img, "bold", new Point(ball.x, ball.y-20), 3, 1.5, new Scalar(0, 0, 255));
+		}
+        
+        Imgproc.putText(img, "Bolde tilbage: " + balls.size(), new Point(circles.width()/3, circles.height()-20), 3, 1, new Scalar(255, 0, 0));
+        
+        imgCaptureLabel.setIcon(new ImageIcon(HighGui.toBufferedImage(img)));
+        imgDetectionLabel.setIcon(new ImageIcon(HighGui.toBufferedImage(mask)));
+        videoFrame.repaint();
+	}
+	
+	private void gg() {
 
 		mask = createMask();
 		circles = img.clone();
@@ -200,16 +381,15 @@ public class CamController {
 		}
 	}
 	
-	private static Mat createMask() {
+	private Mat createMask() {
 		Mat mask = new Mat();
 		
 		Imgproc.cvtColor(img, mask, Imgproc.COLOR_BGR2GRAY);
 		
-		
 		//Imgproc.adaptiveThreshold(mask, mask, 255, Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C, Imgproc.THRESH_BINARY_INV, 15, 20);
-		
-		Scalar lower = new Scalar(slider.getValue(), slider1.getValue(), slider2.getValue());
-	    Scalar upper = new Scalar(slider3.getValue(), slider4.getValue(), slider5.getValue());
+
+		Scalar lower = new Scalar(cameraSettings.getLowHue(), cameraSettings.getLowSat(), cameraSettings.getLowVal());
+	    Scalar upper = new Scalar(cameraSettings.getMaxHue(), cameraSettings.getMaxSat(), cameraSettings.getMaxVal());
 	    
         Core.inRange(mask, lower, upper, mask);
 		
@@ -266,7 +446,7 @@ public class CamController {
 		
 	}
 	
-	private static void findBalls(Mat mask) {
+	private void findBalls(Mat mask) {
 		Mat canny = new Mat();
 
 		contours.clear();
@@ -275,8 +455,8 @@ public class CamController {
 		Imgproc.Canny(mask, canny, 250, 750);
 		Imgproc.findContours(canny, contours, new Mat(), Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
 
-		double minArea = Math.PI * (slider6.getValue() * 0.9f) * (slider6.getValue() * 0.9f); // minimal ball area
-		double maxArea = Math.PI * (slider7.getValue() * 1.1f) * (slider7.getValue() * 1.1f); // maximal ball area
+		double minArea = Math.PI * (cameraSettings.getMinBallSize() * 0.9f) * (cameraSettings.getMinBallSize() * 0.9f); // minimal ball area
+		double maxArea = Math.PI * (cameraSettings.getMaxBallSize() * 1.1f) * (cameraSettings.getMaxBallSize() * 1.1f); // maximal ball area
 		
 
 		for (int i = 0; i < contours.size(); i++) {
@@ -310,162 +490,7 @@ public class CamController {
 		System.out.println("Balls found: " + balls.size());
 	}
 	
-	private static void findWallsVirkerIKorrektBelysning() {
-		Mat canny = new Mat();
-		List<MatOfPoint> contoursWalls = new ArrayList<MatOfPoint>();
-		Mat mask = createMaskWalls();
-		
-		JFrame frame2 = new JFrame("Video");
-        frame2.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        
-		Imgproc.Canny(mask, canny, 200, 750);
-		Imgproc.findContours(canny, contoursWalls, new Mat(), Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
-		
-		double areaLast = 0;
-		Point[] verticesLast = null;
-		RotatedRect rectLast = null;
-		
-		for (int i = 0; i < contoursWalls.size(); i++) {
-			
-			double area = Imgproc.contourArea(contoursWalls.get(i));
-			
-			if(area > 0.0) {
-				System.out.println(area + " - " + areaLast);
-				if(area > areaLast) {
-					RotatedRect rect = Imgproc.minAreaRect(new MatOfPoint2f(contoursWalls.get(i).toArray()));
-					Point[] vertices = new Point[4];  
-			        rect.points(vertices);
-			        
-			        verticesLast = vertices;
-			        rectLast = rect;
-				}
-				areaLast = area;
-			}
-			
-		}
-		
-		if(verticesLast != null && rectLast != null) {
-			for(int j = 0; j < 4; j++) {
-				Imgproc.line(img, verticesLast[j], verticesLast[(j+1)%4], new Scalar(0,255,0));
-				Imgproc.putText(img, "Corner", verticesLast[j], 2, 0.5, new Scalar(250,250,250));
-			}
-			Imgproc.putText(img, "wall", new Point(rectLast.center.x, rectLast.center.y), 0, 1.5, new Scalar(0, 255, 0));
-		}
-				
-		//Warp
-		
-		Mat src_mat=new Mat(4,1,CvType.CV_32FC2);
-	    Mat dst_mat=new Mat(4,1,CvType.CV_32FC2);
-
-	    
-	    
-	    src_mat.put(0, 0, verticesLast[2].x, verticesLast[2].y, verticesLast[3].x, verticesLast[3].y, verticesLast[1].x, verticesLast[1].y, verticesLast[0].x, verticesLast[0].y);
-	    dst_mat.put(0, 0, 0.0, 0.0, rectLast.size.height, 0.0, 0.0, rectLast.size.width, rectLast.size.height, rectLast.size.width);
-	    Mat perspectiveTransform = Imgproc.getPerspectiveTransform(src_mat, dst_mat);
-
-	    Mat dst = img.clone();
-
-	    Imgproc.warpPerspective(img, dst, perspectiveTransform, new Size(rectLast.size.height, rectLast.size.width));
-	    
-        JPanel framePanel = new JPanel();
-
-        imgCaptureLabelMask = new JLabel(new ImageIcon(HighGui.toBufferedImage(img)));
-        framePanel.add(imgCaptureLabelMask);
-        frame2.getContentPane().add(framePanel, BorderLayout.CENTER);
-        
-        frame2.repaint();
-        frame2.pack();
-        frame2.setVisible(true);
-        
-		
-	}
-	
-	private static void findWallsFarveFredag() {
-		Mat canny = new Mat();
-		List<MatOfPoint> contoursWalls = new ArrayList<MatOfPoint>();
-		Mat mask = createMaskWalls();
-		
-		JFrame frame2 = new JFrame("Video");
-        frame2.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        
-		Imgproc.Canny(mask, canny, 200, 750);
-		Imgproc.findContours(canny, contoursWalls, new Mat(), Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
-		
-		double areaLast = 0;
-		Point[] verticesLast = null;
-		RotatedRect rectLast = null;
-		
-		for (int i = 0; i < contoursWalls.size(); i++) {
-			
-			double area = Imgproc.contourArea(contoursWalls.get(i));
-			MatOfPoint2f temp = new MatOfPoint2f(contoursWalls.get(i).toArray());
-			MatOfPoint2f approxCurve = new MatOfPoint2f();
-			Imgproc.approxPolyDP(temp, approxCurve, Imgproc.arcLength(temp, true) * 0.02, true);
-			
-			System.out.println(approxCurve.total());
-			
-			if(approxCurve.total() == 4 && area > 0.0) {
-				System.out.println(area + " - " + areaLast);
-				if(area > areaLast) {
-					RotatedRect rect = Imgproc.minAreaRect(new MatOfPoint2f(contoursWalls.get(i).toArray()));
-					Point[] vertices = new Point[4];  
-			        rect.points(vertices);
-			        
-			        verticesLast = vertices;
-			        rectLast = rect;
-				}
-				areaLast = area;
-			}
-			
-		}
-		
-		if(verticesLast != null && rectLast != null) {
-			for(int j = 0; j < 4; j++) {
-				Imgproc.line(img, verticesLast[j], verticesLast[(j+1)%4], new Scalar(0,255,0));
-				Imgproc.putText(img, "Corner", verticesLast[j], 2, 0.5, new Scalar(250,250,250));
-			}
-			Imgproc.putText(img, "wall", new Point(rectLast.center.x, rectLast.center.y), 0, 1.5, new Scalar(0, 255, 0));
-		}
-				
-		//Warp
-		/*
-		Mat src_mat=new Mat(4,1,CvType.CV_32FC2);
-	    Mat dst_mat=new Mat(4,1,CvType.CV_32FC2);
-
-	    
-	    
-	    src_mat.put(0, 0, verticesLast[2].x, verticesLast[2].y, verticesLast[3].x, verticesLast[3].y, verticesLast[1].x, verticesLast[1].y, verticesLast[0].x, verticesLast[0].y);
-	    dst_mat.put(0, 0, 0.0, 0.0, rectLast.size.height, 0.0, 0.0, rectLast.size.width, rectLast.size.height, rectLast.size.width);
-	    Mat perspectiveTransform = Imgproc.getPerspectiveTransform(src_mat, dst_mat);
-
-	    Mat dst = img.clone();
-
-	    Imgproc.warpPerspective(img, dst, perspectiveTransform, new Size(rectLast.size.height, rectLast.size.width));
-	    */
-        JPanel framePanel = new JPanel();
-
-        imgCaptureLabelMask = new JLabel(new ImageIcon(HighGui.toBufferedImage(img)));
-        framePanel.add(imgCaptureLabelMask);
-        frame2.getContentPane().add(framePanel, BorderLayout.CENTER);
-        
-        frame2.repaint();
-        frame2.pack();
-        frame2.setVisible(true);
-        
-		
-	}
-	
-	private static Mat createMaskWallsEdges() {
-		Mat mask = new Mat();
-		
-		Imgproc.cvtColor(img, mask, Imgproc.COLOR_BGR2GRAY);
-		
-		Imgproc.adaptiveThreshold(mask, mask, 255, Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C, Imgproc.THRESH_BINARY, 11, 2);
-		
-		return mask;
-	}
-	
-	private static void findWalls() {
+	private void findWalls() {
 		
 		Mat dst = new Mat();
 		Mat edges = new Mat();
@@ -739,6 +764,34 @@ public class CamController {
         System.arraycopy(b, 0, targetPixels, 0, b.length);  
         return image;
 
+    }
+	
+	private class CaptureTask extends SwingWorker<Void, Mat> {
+        @Override
+        protected Void doInBackground() {
+            Mat matFrame = new Mat();
+            while (!isCancelled()) {
+                if (!videoCapture.read(matFrame)) {
+                    break;
+                }
+                publish(matFrame.clone());
+            }
+            return null;
+        }
+        @Override
+        protected void process(List<Mat> frames) {
+            Mat imgCapture = frames.get(frames.size() - 1);
+            matFrame = imgCapture;
+
+            //Findwalls etc her
+            updateFrame();
+            
+            imgCaptureLabel.setIcon(new ImageIcon(HighGui.toBufferedImage(imgCapture)));
+
+            imgCaptureLabel.setIcon(new ImageIcon(HighGui.toBufferedImage(img)));
+            imgDetectionLabel.setIcon(new ImageIcon(HighGui.toBufferedImage(mask)));
+            videoFrame.repaint();
+        }
     }
 	
 }
