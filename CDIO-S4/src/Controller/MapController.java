@@ -98,7 +98,7 @@ public class MapController {
 		}
 		
 	}
-
+	//hallo
 
 	class Sort implements Comparator<Point>{
 
