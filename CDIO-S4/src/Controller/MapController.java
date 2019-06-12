@@ -3,7 +3,9 @@ package Controller;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import DTO.Ball;
 import DTO.DeliveryPoint;
@@ -21,9 +23,11 @@ public class MapController {
 	ArrayList<Ball> coordinates = new ArrayList<Ball>();
 
 	Robot robot;
-	
+
 	Direction direction;
-	
+
+	Map<String, Double> instructionMap = new HashMap <String, Double>();
+
 	public void findBalls(int[][] map) {
 		//int ballcounter;
 		boolean ballStatus = false;
@@ -38,14 +42,14 @@ public class MapController {
 					direction = new Direction(x,y);
 				}
 				if(map[x][y] == 1) {
-					if(map[x+3][y] == 1 && map[x][y+3] == 1 && map[x+3][y+3] == 1) {
+					if(map[x+1][y] == 1 && map[x][y+1] == 1 && map[x+1][y+1] == 1) {
 
 						ballStatus = true;
 
 						map[x][y] = 9;
-						map[x+3][y] = 0;
-						map[x][y+3] = 0;
-						map[x+3][y+3] = 0;
+						map[x+1][y] = 0;
+						map[x][y+1] = 0;
+						map[x+1][y+1] = 0;
 
 						coordinates.add(new Ball(x,y));
 					}
@@ -54,12 +58,12 @@ public class MapController {
 		}
 		findShortestPath();	
 	}
-	
+
 	int[][] map = null;
 	public MapController(int[][] loadMap) {
 		//det her array er nu bestemt ud fra billedet fra opencv.
 		map = loadMap;
-		
+
 		System.out.println("int[][] map = new int[][]{");
 		/*for (int i = 0; i < 180; i++) {
 			System.out.print("{ ");
@@ -77,16 +81,10 @@ public class MapController {
 		}
 		System.out.println("};");*/
 	}
-	
+
 	public MapController() {
 		// TODO Auto-generated constructor stub
 	}
-
-	/*
-	private void locateBalls() {
-		//indsæt dem i balls arraylist
-	}*/
-	
 
 	public int[][] locateDeliveryPoints(int[][] map) {
 		//System.out.println(coordinates);
@@ -95,53 +93,34 @@ public class MapController {
 
 	public void findShortestPath() {
 		Collections.sort(coordinates, new Sort());
-		//System.out.println(coordinates);
-		Ball ball;
-		
-		//Iterator<Ball> iterator = coordinates.iterator();
-		
+
 		int iterator = coordinates.size();
-		
+		int operationNum = 0;
+
 		for(int i = 0; i < iterator; i++) {
 			Collections.sort(coordinates, new Sort());
 			double[] test = coordinates.get(0).getCoordinates();
-			System.out.println("for slut"+ coordinates.size());
-			
+
 			for(int j = 0; j < coordinates.size(); j++) {
-				//System.out.println("retningspunkt" + direction);
-				System.out.println(robot);
 				System.out.println(coordinates.get(j)+ " dist = " + robot.dist(coordinates.get(j)) + " angle = " + robot.anglebetween(direction, coordinates.get(j)));
-				}
+				instructionMap.put("travel" + operationNum, robot.dist(coordinates.get(j)));
+				instructionMap.put("rotate" + (operationNum + 1), robot.anglebetween(direction, coordinates.get(j)));
+				operationNum += 2;
+
+			}
 			System.out.println("Antal bolde der mangler at blive besøgt: "+ coordinates.size());
 
-			robot.setCoordinates(test[0], test[1]);
-			
-			
-			//System.out.println(robot + " -> " + ball + " dist = " + robot.dist(ball));
-			
+			robot.setCoordinates(test[0], test[1]);	
+
 			coordinates.remove(0);
-			System.out.println("for slut"+ coordinates.size());
-			
-			
-			//while(iterator.hasNext()) {
-			/*ball = iterator.next();
-			
-			coordinates.remove(ball);
-			robot.setCoordinates(ball.getCoordinates()[0], ball.getCoordinates()[1]);
-			Collections.sort(coordinates, new Sort());
-			//Collections.sort(coordinates, new Sort());
-			//System.out.println(coordinates);
-			iterator = coordinates.iterator();*/
 		}
-		
+		System.out.println(instructionMap);
 	}
-	
 
 	class Sort implements Comparator<Point>{
 
 		@Override
-		public int compare(Point point1, Point point2) { //skal sorteres p� den rigtige m�de
-			//System.out.println(point1 + " " + point2 + " " + (robot.dist(point1) - robot.dist(point2)));
+		public int compare(Point point1, Point point2) { 
 			
 			if(robot.dist(point1) < robot.dist(point2)) {
 				return -1;
@@ -149,7 +128,7 @@ public class MapController {
 			if(robot.dist(point2) < robot.dist(point1)) {
 				return 1;
 			}
-			
+
 			return 0;
 		}
 
