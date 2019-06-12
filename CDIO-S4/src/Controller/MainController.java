@@ -3,7 +3,7 @@ package Controller;
 public class MainController {
 
 	RobotController robotController = new RobotController();
-	CamController camController = new CamController();
+	CamController camController = new CamController(false);
 	MapController mapController = new MapController(CamController.getMap());
 
 	//Ny klasse der henter input fra kamera - skal bruges i robot og map
