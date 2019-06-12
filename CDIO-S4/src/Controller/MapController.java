@@ -38,16 +38,14 @@ public class MapController {
 					direction = new Direction(x,y);
 				}
 				if(map[x][y] == 1) {
-					if(map[x+1][y] == 1 && map[x][y+1] == 1 && map[x+1][y+1] == 1) {
+					if(map[x+3][y] == 1 && map[x][y+3] == 1 && map[x+3][y+3] == 1) {
 
 						ballStatus = true;
 
-						//System.out.println(map[x][y]);
-
 						map[x][y] = 9;
-						map[x+1][y] = 0;
-						map[x][y+1] = 0;
-						map[x+1][y+1] = 0;
+						map[x+3][y] = 0;
+						map[x][y+3] = 0;
+						map[x+3][y+3] = 0;
 
 						coordinates.add(new Ball(x,y));
 					}
@@ -110,9 +108,9 @@ public class MapController {
 			System.out.println("for slut"+ coordinates.size());
 			
 			for(int j = 0; j < coordinates.size(); j++) {
-				System.out.println("retningspunkt" + direction);
-				System.out.println("Robottens punkt " + robot);
-				System.out.println(coordinates.get(j)+ " dist = " + robot.dist(coordinates.get(j)) + " angle = " + direction.anglebetween(robot, coordinates.get(j)));
+				//System.out.println("retningspunkt" + direction);
+				System.out.println(robot);
+				System.out.println(coordinates.get(j)+ " dist = " + robot.dist(coordinates.get(j)) + " angle = " + robot.anglebetween(direction, coordinates.get(j)));
 				}
 			System.out.println("Antal bolde der mangler at blive besøgt: "+ coordinates.size());
 

@@ -24,11 +24,14 @@ public class Point {
 	}
 
 	public double calcAngle(Point dpoint, Point ballpoint) {
-
-		return  Math.toDegrees(Math.acos((dpoint.x * ballpoint.x + dpoint.y * ballpoint.y) / 
-				((Math.sqrt(Math.pow(dpoint.x, 2) + Math.pow(dpoint.y,2))) 
-				* Math.sqrt(Math.pow(ballpoint.x, 2) + Math.pow(ballpoint.y, 2)))));
-	}
+		Point v1, v2;
+		v1 = new Point(dpoint.x - x,dpoint.y - y);
+		v2 = new Point(ballpoint.x - x,ballpoint.y - y);
+		
+		return  Math.round(Math.toDegrees(Math.acos((v1.x * v2.x + v1.y * v2.y) / 
+				((Math.sqrt(Math.pow(v1.x, 2) + Math.pow(v1.y,2))) 
+				* Math.sqrt(Math.pow(v2.x, 2) + Math.pow(v2.y, 2)))))*100)/100;
+		}  
 	
 	public double anglebetween(Point dpoint, Point ballpoint) {
 		if(calcAngle(dpoint,ballpoint)>180) {
