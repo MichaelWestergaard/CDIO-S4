@@ -79,7 +79,6 @@ public class CamController {
 	static JSlider slider7 = new JSlider(0, 25);
 	
 	static Mat circles;
-	static Mat mask;
 	Mat imageWithGrid;
 	
 	private VideoCapture videoCapture;
@@ -87,6 +86,7 @@ public class CamController {
     private CaptureTask captureTask;
     private Camera cameraSettings;
     private boolean useCam = true;
+    private Mat mask, inRange, edges;
     
     private FrameHelper frameHelper = new FrameHelper();
 	
@@ -266,7 +266,7 @@ public class CamController {
 		}
 	}
 	
-	private void updateFrame() {
+	private void updateFrameN() {
 
 		img = matFrame.clone();
 		/*
@@ -343,18 +343,103 @@ public class CamController {
 	    */
 	    mask = createMask();
 		circles = img.clone();
-        findBalls(mask);
-        //findRobot(mask);
+        //findBalls(mask);
+        findRobot(mask);
 
         for (Ball ball : balls) {
 			Imgproc.circle(img, new Point(ball.x, ball.y), 20, new Scalar(0, 0, 255));
 			Imgproc.putText(img, "bold", new Point(ball.x, ball.y-20), 3, 1.5, new Scalar(0, 0, 255));
 		}
         
+        for (Ball triangle : triangles) {
+        	//System.out.println("roboto" + triangle.x + ", " + triangle.y);
+			Imgproc.circle(img, new Point(triangle.x, triangle.y), 50, new Scalar(0, 255, 0));
+			Imgproc.putText(img, "Roboto", new Point(triangle.x, triangle.y), 3, 1.5, new Scalar(0, 255, 0));
+		}
+        
         Imgproc.putText(img, "Bolde tilbage: " + balls.size(), new Point(circles.width()/3, circles.height()-20), 3, 1, new Scalar(255, 0, 0));
         
         imgCaptureLabel.setIcon(new ImageIcon(HighGui.toBufferedImage(img)));
         imgDetectionLabel.setIcon(new ImageIcon(HighGui.toBufferedImage(mask)));
+        videoFrame.repaint();
+	}
+	
+	private void updateFrame() {
+		Mat capturedFrame = matFrame.clone();
+		mask = new Mat();
+		Mat threshold = new Mat();
+		edges = new Mat();
+		
+		Imgproc.cvtColor(capturedFrame, mask, Imgproc.COLOR_BGR2HSV);
+		
+		//Imgproc.adaptiveThreshold(mask, threshold, 255, Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C, Imgproc.THRESH_BINARY, 11, 2);
+
+		inRange = new Mat();
+		
+		Scalar lower = new Scalar(cameraSettings.getLowHue(), cameraSettings.getLowSat(), cameraSettings.getLowVal());
+	    Scalar upper = new Scalar(cameraSettings.getMaxHue(), cameraSettings.getMaxSat(), cameraSettings.getMaxVal());
+	    
+        Core.inRange(mask, lower, upper, inRange);
+                
+        int lowThresh = 90;
+
+		Imgproc.Canny(inRange, edges, lowThresh, lowThresh*3, 3, true);
+		
+
+		List<MatOfPoint> contoursWalls = new ArrayList<MatOfPoint>();
+
+		Imgproc.findContours(edges, contoursWalls, new Mat(), Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_NONE);
+
+		//Imgproc.drawContours(matFrame, contoursWalls, -1, new Scalar(0,255,0));
+		
+		
+		double areaLast = 0;
+		double crossArea = 0.0;
+		int crossI = -1;
+		Point[] verticesLast = null;
+		RotatedRect rectLast = null;
+		
+		for (int i = 0; i < contoursWalls.size(); i++) {
+			MatOfPoint2f temp = new MatOfPoint2f(contoursWalls.get(i).toArray());
+			MatOfPoint2f approxCurve = new MatOfPoint2f();
+			Imgproc.approxPolyDP(temp, approxCurve, Imgproc.arcLength(temp, true) * 0.004, true);
+			
+			if(approxCurve.total() == 4) {
+				RotatedRect rect = Imgproc.minAreaRect(new MatOfPoint2f(contoursWalls.get(i).toArray()));
+				Point[] vertices = new Point[4];  
+		        rect.points(vertices);
+		        
+				double area = rect.size.width * rect.size.height;
+				
+				if(area > areaLast) {
+		        	verticesLast = vertices;
+			        rectLast = rect;
+					areaLast = area;
+				}
+			}else {
+				double crossAreaLocal = Imgproc.contourArea(approxCurve);
+				if(crossAreaLocal > crossArea && crossAreaLocal >= 1000 && crossAreaLocal <= 1200) {
+					crossArea = crossAreaLocal;
+					crossI = i;
+				}
+				
+			}
+		}
+		
+		if(verticesLast != null && rectLast != null) {
+			for(int j = 0; j < 4; j++) {
+				Imgproc.line(matFrame, verticesLast[j], verticesLast[(j+1)%4], new Scalar(0,255,0));
+				Imgproc.putText(matFrame, verticesLast[j] + "", verticesLast[j], 2, 0.5, new Scalar(250,250,250));
+			}
+			//Imgproc.putText(img, "wall", new Point(rectLast.center.x, rectLast.center.y), 0, 1.5, new Scalar(0, 255, 0));
+		}
+		
+		if(crossI > 0) {
+			Imgproc.drawContours(matFrame, contoursWalls, crossI, new Scalar(255,0,0), Imgproc.FILLED);
+		}
+			
+        imgCaptureLabel.setIcon(new ImageIcon(HighGui.toBufferedImage(inRange)));
+        imgDetectionLabel.setIcon(new ImageIcon(HighGui.toBufferedImage(edges)));
         videoFrame.repaint();
 	}
 	
@@ -412,7 +497,7 @@ public class CamController {
 		return mask;
 	}
 	
-	private static void findRobot(Mat mask) {
+	private void findRobot(Mat mask) {
 		
 		triangles.clear();
 		
@@ -420,7 +505,7 @@ public class CamController {
 		Mat canny = new Mat();
 		
 		Imgproc.Canny(mask, canny, 250, 0);
-		Imgproc.findContours(canny, contoursRoboto, new Mat(), Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
+		Imgproc.findContours(canny, contoursRoboto, new Mat(), Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_NONE);
 
 		MatOfPoint2f matOfPoint2f = new MatOfPoint2f();
 		MatOfPoint2f approxCurve = new MatOfPoint2f();
@@ -786,11 +871,12 @@ public class CamController {
             //Findwalls etc her
             updateFrame();
             
-            imgCaptureLabel.setIcon(new ImageIcon(HighGui.toBufferedImage(imgCapture)));
-
-            imgCaptureLabel.setIcon(new ImageIcon(HighGui.toBufferedImage(img)));
-            imgDetectionLabel.setIcon(new ImageIcon(HighGui.toBufferedImage(mask)));
+            
+            
+            imgCaptureLabel.setIcon(new ImageIcon(HighGui.toBufferedImage(matFrame)));
+            imgDetectionLabel.setIcon(new ImageIcon(HighGui.toBufferedImage(edges)));
             videoFrame.repaint();
+            
         }
     }
 	
