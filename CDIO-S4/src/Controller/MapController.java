@@ -102,11 +102,11 @@ public class MapController {
 			Collections.sort(coordinates, new Sort());
 			double[] test = coordinates.get(0).getCoordinates();
 			System.out.println("for slut"+ coordinates.size());
-
+			
 			for(int j = 0; j < coordinates.size(); j++) {
 				System.out.println(coordinates.get(j)+ " dist = " + robot.dist(coordinates.get(j)));
 				}
-			System.out.println("for slut"+ coordinates.size());
+			System.out.println("Antal bolde der mangler at blive besøgt: "+ coordinates.size());
 
 			robot.setCoordinates(test[0], test[1]);
 			
@@ -129,15 +129,13 @@ public class MapController {
 		}
 		
 	}
-	//hallo
+	
 
 	class Sort implements Comparator<Point>{
 
 		@Override
 		public int compare(Point point1, Point point2) { //skal sorteres p� den rigtige m�de
 			//System.out.println(point1 + " " + point2 + " " + (robot.dist(point1) - robot.dist(point2)));
-			
-			//tager ikke h�jde for en ny rute efter at den har kommet og taget bolden
 			
 			if(robot.dist(point1) < robot.dist(point2)) {
 				return -1;
