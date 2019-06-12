@@ -7,6 +7,7 @@ import java.util.List;
 
 import DTO.Ball;
 import DTO.DeliveryPoint;
+import DTO.Direction;
 import DTO.Point;
 import DTO.Robot;
 
@@ -20,7 +21,9 @@ public class MapController {
 	ArrayList<Ball> coordinates = new ArrayList<Ball>();
 
 	Robot robot;
-
+	
+	Direction direction;
+	
 	public void findBalls(int[][] map) {
 		//int ballcounter;
 		boolean ballStatus = false;
@@ -31,17 +34,20 @@ public class MapController {
 				if(map[x][y] == 9) {
 					robot = new Robot(x,y);
 				}
+				if(map[x][y] == 3) {
+					direction = new Direction(x,y);
+				}
 				if(map[x][y] == 1) {
-					if(map[x+3][y] == 1 && map[x][y+3] == 1 && map[x+3][y+3] == 1) {
+					if(map[x+1][y] == 1 && map[x][y+1] == 1 && map[x+1][y+1] == 1) {
 
 						ballStatus = true;
 
 						//System.out.println(map[x][y]);
 
 						map[x][y] = 9;
-						map[x+3][y] = 0;
-						map[x][y+3] = 0;
-						map[x+3][y+3] = 0;
+						map[x+1][y] = 0;
+						map[x][y+1] = 0;
+						map[x+1][y+1] = 0;
 
 						coordinates.add(new Ball(x,y));
 					}
@@ -57,10 +63,10 @@ public class MapController {
 		map = loadMap;
 		
 		System.out.println("int[][] map = new int[][]{");
-		for (int i = 0; i < 180; i++) {
+		/*for (int i = 0; i < 180; i++) {
 			System.out.print("{ ");
 			for (int j = 0; j < 120; j++) {
-				System.out.print(map[i][j] + "");
+				//System.out.print(map[i][j] + "");
 				if(j+1 != 120) {
 					System.out.print(", ");
 				}
@@ -71,7 +77,7 @@ public class MapController {
 			}
 			System.out.println();
 		}
-		System.out.println("};");
+		System.out.println("};");*/
 	}
 	
 	public MapController() {
@@ -104,7 +110,9 @@ public class MapController {
 			System.out.println("for slut"+ coordinates.size());
 			
 			for(int j = 0; j < coordinates.size(); j++) {
-				System.out.println(coordinates.get(j)+ " dist = " + robot.dist(coordinates.get(j)));
+				System.out.println("retningspunkt" + direction);
+				System.out.println("Robottens punkt " + robot);
+				System.out.println(coordinates.get(j)+ " dist = " + robot.dist(coordinates.get(j)) + " angle = " + direction.anglebetween(robot, coordinates.get(j)));
 				}
 			System.out.println("Antal bolde der mangler at blive besøgt: "+ coordinates.size());
 
