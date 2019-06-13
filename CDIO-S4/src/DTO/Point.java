@@ -33,7 +33,7 @@ public class Point {
 				* Math.sqrt(Math.pow(v2.x, 2) + Math.pow(v2.y, 2)))))*100)/100;
 		}  
 	
-	public double anglebetween(Point dpoint, Point ballpoint) {
+	public double angleBetween(Point dpoint, Point ballpoint) {
 		if(calcAngle(dpoint,ballpoint)>180) {
 			return Math.acos(360 - calcAngle(dpoint,ballpoint));
 		}

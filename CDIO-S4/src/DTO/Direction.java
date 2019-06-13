@@ -10,7 +10,7 @@ public class Direction extends Point{
 
 	@Override
 	public String toString() {
-		return "Ball coordinates = " + Arrays.toString(getCoordinates());
+		return "Direction coordinates = " + Arrays.toString(getCoordinates());
 	}
 	
 	
