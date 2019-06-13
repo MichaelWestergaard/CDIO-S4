@@ -15,7 +15,8 @@ public class FrameHelper extends JFrame {
 	ActionListener btnListener;
 	
 	JPanel mainPanel;
-	JSlider minBallSize, maxBallSize, lowHue, maxHue, lowSat, maxSat, lowVal, maxVal;
+	JSlider minBallSize, maxBallSize, lowHueWalls, maxHueWalls, lowSatWalls, maxSatWalls, lowValWalls, maxValWalls;
+	JSlider lowHueBalls, maxHueBalls, lowSatBalls, maxSatBalls, lowValBalls, maxValBalls;
 	JButton save;
 	
 	public JFrame calibrationMenu() {
@@ -24,7 +25,7 @@ public class FrameHelper extends JFrame {
 		mainPanel = new JPanel();
 
 		mainPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
-		menu.setSize(700, 250);
+		menu.setSize(700, 400);
 		
 		minBallSize = new JSlider(0, 25);
 		minBallSize.setPaintTicks(true);
@@ -34,33 +35,61 @@ public class FrameHelper extends JFrame {
 		maxBallSize.setPaintTicks(true);
 		addToMainPanel(maxBallSize, "Max Bold størrelse");
 		
-		
+		//Walls
 		//Hue
-		lowHue = new JSlider(0, 255);
-		lowHue.setPaintTicks(true);
-		addToMainPanel(lowHue, "Low Hue");
+		lowHueWalls = new JSlider(0, 255);
+		lowHueWalls.setPaintTicks(true);
+		addToMainPanel(lowHueWalls, "Low Hue Walls");
 		
-		maxHue = new JSlider(0, 255);
-		maxHue.setPaintTicks(true);
-		addToMainPanel(maxHue, "Max Hue");
+		maxHueWalls = new JSlider(0, 255);
+		maxHueWalls.setPaintTicks(true);
+		addToMainPanel(maxHueWalls, "Max Hue Walls");
 		
 		//Saturation
-		lowSat = new JSlider(0, 255);
-		lowSat.setPaintTicks(true);
-		addToMainPanel(lowSat, "Low Saturation");
+		lowSatWalls = new JSlider(0, 255);
+		lowSatWalls.setPaintTicks(true);
+		addToMainPanel(lowSatWalls, "Low Saturation Walls");
 		
-		maxSat = new JSlider(0, 255);
-		maxSat.setPaintTicks(true);
-		addToMainPanel(maxSat, "Max Saturation");
+		maxSatWalls = new JSlider(0, 255);
+		maxSatWalls.setPaintTicks(true);
+		addToMainPanel(maxSatWalls, "Max Saturation Walls");
 		
 		//Value
-		lowVal = new JSlider(0, 255);
-		lowVal.setPaintTicks(true);
-		addToMainPanel(lowVal, "Low Value");
+		lowValWalls = new JSlider(0, 255);
+		lowValWalls.setPaintTicks(true);
+		addToMainPanel(lowValWalls, "Low Value Walls");
 		
-		maxVal = new JSlider(0, 255);
-		maxVal.setPaintTicks(true);
-		addToMainPanel(maxVal, "Max Value");
+		maxValWalls = new JSlider(0, 255);
+		maxValWalls.setPaintTicks(true);
+		addToMainPanel(maxValWalls, "Max Value Walls");
+		
+		// Balls
+		// Hue
+		lowHueBalls = new JSlider(0, 255);
+		lowHueBalls.setPaintTicks(true);
+		addToMainPanel(lowHueBalls, "Low Hue Balls");
+		
+		maxHueBalls = new JSlider(0, 255);
+		maxHueBalls.setPaintTicks(true);
+		addToMainPanel(maxHueBalls, "Max Hue balls");
+		
+		//Saturation
+		lowSatBalls = new JSlider(0, 255);
+		lowSatBalls.setPaintTicks(true);
+		addToMainPanel(lowSatBalls, "Low Saturation Balls");
+		
+		maxSatBalls = new JSlider(0, 255);
+		maxSatBalls.setPaintTicks(true);
+		addToMainPanel(maxSatBalls, "Max Saturation Balls");
+		
+		//Value
+		lowValBalls = new JSlider(0, 255);
+		lowValBalls.setPaintTicks(true);
+		addToMainPanel(lowValBalls, "Low Value Balls");
+		
+		maxValBalls = new JSlider(0, 255);
+		maxValBalls.setPaintTicks(true);
+		addToMainPanel(maxValBalls, "Max Value Balls");
 		
 		save = new JButton("Gem Indstillinger");
 		save.addActionListener(btnListener);
@@ -74,7 +103,6 @@ public class FrameHelper extends JFrame {
 	
 	private void addToMainPanel(JSlider slider, String text) {
 		JPanel panel = new JPanel();
-		panel.setSize(300, 200);
 		panel.add(new JLabel(text));
 		panel.add(slider);
 		
@@ -86,100 +114,18 @@ public class FrameHelper extends JFrame {
 	public void setListener(ChangeListener listener) {
 		minBallSize.addChangeListener(listener);
 		maxBallSize.addChangeListener(listener);
-		lowHue.addChangeListener(listener);
-		maxHue.addChangeListener(listener);
-		lowSat.addChangeListener(listener);
-		maxSat.addChangeListener(listener);
-		lowVal.addChangeListener(listener);
-		maxVal.addChangeListener(listener);
-	}
-
-	public ActionListener getBtnListener() {
-		return btnListener;
-	}
-
-	public void setBtnListener(ActionListener btnListener) {
-		this.btnListener = btnListener;
-	}
-
-	public JPanel getMainPanel() {
-		return mainPanel;
-	}
-
-	public void setMainPanel(JPanel mainPanel) {
-		this.mainPanel = mainPanel;
-	}
-
-	public JSlider getMinBallSize() {
-		return minBallSize;
-	}
-
-	public void setMinBallSize(JSlider minBallSize) {
-		this.minBallSize = minBallSize;
-	}
-
-	public JSlider getMaxBallSize() {
-		return maxBallSize;
-	}
-
-	public void setMaxBallSize(JSlider maxBallSize) {
-		this.maxBallSize = maxBallSize;
-	}
-
-	public JSlider getLowHue() {
-		return lowHue;
-	}
-
-	public void setLowHue(JSlider lowHue) {
-		this.lowHue = lowHue;
-	}
-
-	public JSlider getMaxHue() {
-		return maxHue;
-	}
-
-	public void setMaxHue(JSlider maxHue) {
-		this.maxHue = maxHue;
-	}
-
-	public JSlider getLowSat() {
-		return lowSat;
-	}
-
-	public void setLowSat(JSlider lowSat) {
-		this.lowSat = lowSat;
-	}
-
-	public JSlider getMaxSat() {
-		return maxSat;
-	}
-
-	public void setMaxSat(JSlider maxSat) {
-		this.maxSat = maxSat;
-	}
-
-	public JSlider getLowVal() {
-		return lowVal;
-	}
-
-	public void setLowVal(JSlider lowVal) {
-		this.lowVal = lowVal;
-	}
-
-	public JSlider getMaxVal() {
-		return maxVal;
-	}
-
-	public void setMaxVal(JSlider maxVal) {
-		this.maxVal = maxVal;
-	}
-
-	public JButton getSave() {
-		return save;
-	}
-
-	public void setSave(JButton save) {
-		this.save = save;
+		lowHueWalls.addChangeListener(listener);
+		maxHueWalls.addChangeListener(listener);
+		lowSatWalls.addChangeListener(listener);
+		maxSatWalls.addChangeListener(listener);
+		lowValWalls.addChangeListener(listener);
+		maxValWalls.addChangeListener(listener);
+		lowHueBalls.addChangeListener(listener);
+		maxHueBalls.addChangeListener(listener);
+		lowSatBalls.addChangeListener(listener);
+		maxSatBalls.addChangeListener(listener);
+		lowValBalls.addChangeListener(listener);
+		maxValBalls.addChangeListener(listener);
 	}
 	
 }

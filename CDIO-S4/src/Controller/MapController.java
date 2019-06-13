@@ -21,51 +21,34 @@ public class MapController {
 	List<Ball> shortestPath = new ArrayList<Ball>();
 	ArrayList<Ball> coordinates = new ArrayList<Ball>();
 
-	Robot robot;
+	Map<String, Double> instructionMap = new HashMap <String, Double>();
 	Direction directionVector, goalPoint;
 	Goal smallGoal, bigGoal;
-
-	Map<String, Double> instructionMap = new HashMap <String, Double>();
-
-	public void findBalls(int[][] map) {
+	private Robot robot;
+	private int[][] map = null;
+	private boolean ready = true;
+	
+	public MapController() {
+		if(map == null) {
+			System.out.println("Map is empty");
+		}
+	}
+	
+	public void loadMap(int[][] loadMap) {
+		map = loadMap;
+		ready = false;
+		findBalls();
+		findShortestPath();
+	}
+	
+	public boolean isReady() {
+		return ready;
+	}
+	
+	public void findBalls() {
 		//int ballcounter;
 		boolean ballStatus = false;
-		//lille mål
-		/*map[0][56] = 5;
-		map[0][57] = 5;
-		map[0][58] = 5;
-		map[0][59] = 5;
-		 */
-		map[0][60] = 5; //centrum af mål
-		/*map[0][61] = 5;
-		map[0][62] = 5;
-		map[0][63] = 5;
-		map[0][64] = 5;
-		 */
-		map[1][60] = 4; //retningspunkt foran mål
-		map[3][55] = 3; //punktet robotten skal dreje fra
-		map[1][50] = -1; //forhindringer
-		map[1][51] = -1;
-
-		//store mål
-		/*map[179][52] = 5;
-		map[179][53] = 5;
-		map[179][54] = 5;
-		map[179][55] = 5;
-		map[179][56] = 5;
-		map[179][57] = 5;
-		map[179][58] = 5;
-		map[179][59] = 5;
-		map[179][60] = 5; // centrum af mål
-		map[179][61] = 5;
-		map[179][62] = 5;
-		map[179][63] = 5;
-		map[179][64] = 5;
-		map[179][65] = 5;
-		map[179][66] = 5;
-		map[179][67] = 5;
-		map[179][68] = 5;
-		 */
+    
 		for (int x = 0; x < map.length; x++) { //r�kkerne
 			for (int y = 0; y < map[x].length; y++) { //kolonnerne
 
@@ -117,34 +100,13 @@ public class MapController {
 			}
 
 		}
-		findShortestPath();	
+		printBallCoordinates();
 	}
 
-	int[][] map = null;
-	public MapController(int[][] loadMap) {
-		//det her array er nu bestemt ud fra billedet fra opencv.
-		map = loadMap;
-
-		//System.out.println("int[][] map = new int[][]{");
-		/*for (int i = 0; i < 180; i++) {
-			System.out.print("{ ");
-			for (int j = 0; j < 120; j++) {
-				//System.out.print(map[i][j] + "");
-				if(j+1 != 120) {
-					System.out.print(", ");
-				}
-			}
-			System.out.print(" }");
-			if(i+1 != 180) {
-				System.out.print(",");
-			}
-			System.out.println();
+	private void printBallCoordinates() {
+		for(Ball ball : coordinates) {
+			System.out.println("x: " + ball.x + " y: " + ball.y);
 		}
-		System.out.println("};");*/
-	}
-
-	public MapController() {
-		// TODO Auto-generated constructor stub
 	}
 
 	public int[][] locateDeliveryPoints(int[][] map) {
@@ -164,7 +126,6 @@ public class MapController {
 			Collections.sort(coordinates, new Sort());
 			double[] test = coordinates.get(0).getCoordinates();
 
-
 			for(int j = 0; j < coordinates.size(); j++) {
 				System.out.println("robot "+ robot+ "  direction  " + directionVector);
 				System.out.println(coordinates.get(j)+ " dist = " + robot.dist(coordinates.get(j)) + " angle = " + robot.angleBetween(directionVector, coordinates.get(j)));
@@ -179,11 +140,7 @@ public class MapController {
 			robot.setCoordinates(test[0], test[1]);	
 
 
-			// drej 180 efter hvert
-			//	directionVector.setCoordinates(robot.x * 0.5, robot.y * 0.5);
-
 			coordinates.remove(0);
-
 			if(coordinates.size() == 0) {
 
 				System.out.println("dist to goalPoint: " + robot.dist(goalPoint) + " angle to goalPoint: " + robot.angleBetween(directionVector, goalPoint));
