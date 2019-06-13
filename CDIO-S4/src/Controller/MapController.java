@@ -67,13 +67,15 @@ public class MapController {
 		for (int x = 0; x < map.length; x++) { //r�kkerne
 			for (int y = 0; y < map[x].length; y++) { //kolonnerne
 				
-				System.out.print(map[x][y]);
+			//	System.out.print(map[x][y]);
 
 				if(map[x][y] == 9) {
 					robot = new Robot(x,y);
+					System.out.println("Robot:   " +robot);
 				}
 				if(map[x][y] == 3) {
 					directionVector = new Direction(x,y);
+					System.out.println("Retning :   " +directionVector);
 				}
 				if(map[x][y] == 4) {
 					goalPoint = new Direction(x,y);
@@ -111,7 +113,7 @@ public class MapController {
 		//det her array er nu bestemt ud fra billedet fra opencv.
 		map = loadMap;
 
-		System.out.println("int[][] map = new int[][]{");
+		//System.out.println("int[][] map = new int[][]{");
 		/*for (int i = 0; i < 180; i++) {
 			System.out.print("{ ");
 			for (int j = 0; j < 120; j++) {
@@ -144,11 +146,15 @@ public class MapController {
 		int iterator = coordinates.size();
 		int operationNum = 0;
 
+		
+		
 		for(int i = 0; i < iterator; i++) {
 			Collections.sort(coordinates, new Sort());
 			double[] test = coordinates.get(0).getCoordinates();
 
+
 			for(int j = 0; j < coordinates.size(); j++) {
+				System.out.println("robot "+ robot+ "  direction  " + directionVector);
 				System.out.println(coordinates.get(j)+ " dist = " + robot.dist(coordinates.get(j)) + " angle = " + robot.angleBetween(directionVector, coordinates.get(j)));
 				instructionMap.put("travel" + operationNum, robot.dist(coordinates.get(j)));
 				instructionMap.put("rotate" + (operationNum + 1), robot.angleBetween(directionVector, coordinates.get(j)));
@@ -156,14 +162,20 @@ public class MapController {
 			}
 		
 			System.out.println("Antal bolde der mangler at blive besøgt: "+ coordinates.size());
-			
+
+			directionVector.setCoordinates((test[0] + test[0] - robot.x)  , (test[1] + test[1] - robot.y ));
 			robot.setCoordinates(test[0], test[1]);	
+
+			
+			// drej 180 efter hvert
+			//	directionVector.setCoordinates(robot.x * 0.5, robot.y * 0.5);
 
 			coordinates.remove(0);
 			
 			if(coordinates.size() == 0) {
-				System.out.println("dist to goalPoint: " + robot.dist(goalPoint) + "angle to goalPoint: " + robot.angleBetween(directionVector, goalPoint));
-				System.out.println("Turns toward the goal:" + robot.angleBetween(goalPoint, smallGoal));
+				
+				System.out.println("dist to goalPoint: " + robot.dist(goalPoint) + " angle to goalPoint: " + robot.angleBetween(directionVector, goalPoint));
+				System.out.println("Angle turning towards the goal" + robot.angleBetween(goalPoint, smallGoal));
 			}
 			
 		}
