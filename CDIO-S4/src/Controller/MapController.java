@@ -14,17 +14,51 @@ public class MapController {
 
 	List<Ball> balls = new ArrayList<Ball>();
 	List<DeliveryPoint> deliveryPoints = new ArrayList<DeliveryPoint>();
-
 	List<Ball> shortestPath = new ArrayList<Ball>();
-
 	ArrayList<Ball> coordinates = new ArrayList<Ball>();
-
-	Robot robot;
-
-	public void findBalls(int[][] map) {
+	private Robot robot;
+	private int[][] map = null;
+	private boolean ready = true;
+	
+	public MapController() {
+		//det her array er nu bestemt ud fra billedet fra opencv.
+		//map = loadMap;
+		
+		if(map == null) {
+			System.out.println("Map is empty");
+		}else {
+			/*System.out.println("int[][] map = new int[][]{");
+			for (int i = 0; i < 180; i++) {
+				System.out.print("{ ");
+				for (int j = 0; j < 120; j++) {
+					System.out.print(map[i][j] + "");
+					if(j+1 != 120) {
+						System.out.print(", ");
+					}
+				}
+				System.out.print(" }");
+				if(i+1 != 180) {
+					System.out.print(",");
+				}
+				System.out.println();
+			}
+			System.out.println("};");*/
+		}	
+	}
+	
+	public void loadMap(int[][] loadMap) {
+		map = loadMap;
+		findBalls();
+		findShortestPath();
+	}
+	
+	public boolean isReady() {
+		return ready;
+	}
+	
+	public void findBalls() {
 		//int ballcounter;
 		boolean ballStatus = false;
-
 
 		for (int x = 0; x < map.length; x++) { //r�kkerne
 			for (int y = 0; y < map[x].length; y++) { //kolonnerne
@@ -48,36 +82,15 @@ public class MapController {
 				}
 			}	
 		}
-		findShortestPath();	
-	}
-	
-	int[][] map = null;
-	public MapController(int[][] loadMap) {
-		//det her array er nu bestemt ud fra billedet fra opencv.
-		map = loadMap;
-		
-		System.out.println("int[][] map = new int[][]{");
-		for (int i = 0; i < 180; i++) {
-			System.out.print("{ ");
-			for (int j = 0; j < 120; j++) {
-				System.out.print(map[i][j] + "");
-				if(j+1 != 120) {
-					System.out.print(", ");
-				}
-			}
-			System.out.print(" }");
-			if(i+1 != 180) {
-				System.out.print(",");
-			}
-			System.out.println();
-		}
-		System.out.println("};");
-	}
-	
-	public MapController() {
-		// TODO Auto-generated constructor stub
+		printBallCoordinates();
 	}
 
+	private void printBallCoordinates() {
+		for(Ball ball : coordinates) {
+			System.out.println("x: " + ball.x + " y: " + ball.y);
+		}
+	}
+	
 	/*
 	private void locateBalls() {
 		//indsæt dem i balls arraylist
@@ -101,12 +114,12 @@ public class MapController {
 		for(int i = 0; i < iterator; i++) {
 			Collections.sort(coordinates, new Sort());
 			double[] test = coordinates.get(0).getCoordinates();
-			System.out.println("for slut"+ coordinates.size());
+			//System.out.println("for slut"+ coordinates.size());
 
 			for(int j = 0; j < coordinates.size(); j++) {
 				System.out.println(coordinates.get(j)+ " dist = " + robot.dist(coordinates.get(j)));
 				}
-			System.out.println("for slut"+ coordinates.size());
+			//System.out.println("for slut"+ coordinates.size());
 
 			robot.setCoordinates(test[0], test[1]);
 			
@@ -114,7 +127,7 @@ public class MapController {
 			//System.out.println(robot + " -> " + ball + " dist = " + robot.dist(ball));
 			
 			coordinates.remove(0);
-			System.out.println("for slut"+ coordinates.size());
+			//System.out.println("for slut"+ coordinates.size());
 			
 			
 			//while(iterator.hasNext()) {

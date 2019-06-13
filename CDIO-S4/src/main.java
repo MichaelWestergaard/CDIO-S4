@@ -210,10 +210,10 @@ public class main {
 	};
 
 	public static void main(String[] args) {
-		CamController camController = new CamController(true);
-		camController.startUp();
+		/*CamController camController = new CamController(true);
+		camController.startUp();*/
 		
-		//new MainController().start();
+		new MainController().start();
 		//new MapController().findBalls(map2);
 		//new MapController().locateDeliveryPoints(map2);
 
