@@ -71,6 +71,7 @@ public class MapController {
 
 				if(map[x][y] == 9) {
 					robot = new Robot(x,y);
+					
 				}
 				if(map[x][y] == 3) {
 					directionVector = new Direction(x,y);
@@ -150,8 +151,8 @@ public class MapController {
 
 			for(int j = 0; j < coordinates.size(); j++) {
 				System.out.println(coordinates.get(j)+ " dist = " + robot.dist(coordinates.get(j)) + " angle = " + robot.angleBetween(directionVector, coordinates.get(j)));
-				instructionMap.put("travel" + operationNum, robot.dist(coordinates.get(j)));
-				instructionMap.put("rotate" + (operationNum + 1), robot.angleBetween(directionVector, coordinates.get(j)));
+				instructionMap.put("travel " + operationNum, robot.dist(coordinates.get(j)));
+				// instructionMap.put("rotate" + (operationNum + 1), robot.angleBetween(directionVector, coordinates.get(j)));
 				operationNum += 2;
 			}
 		
