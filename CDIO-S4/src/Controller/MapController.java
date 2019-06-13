@@ -35,16 +35,18 @@ public class MapController {
 		map[0][57] = 5;
 		map[0][58] = 5;
 		map[0][59] = 5;
-		*/
+		 */
 		map[0][60] = 5; //centrum af mål
 		/*map[0][61] = 5;
 		map[0][62] = 5;
 		map[0][63] = 5;
 		map[0][64] = 5;
 		 */
-		map[3][60] = 3; //retningspunkt foran mål
-		map[3][55] = 4; //punktet robotten skal dreje fra
-		
+		map[1][60] = 4; //retningspunkt foran mål
+		map[3][55] = 3; //punktet robotten skal dreje fra
+		map[1][50] = -1; //forhindringer
+		map[1][51] = -1;
+
 		//store mål
 		/*map[179][52] = 5;
 		map[179][53] = 5;
@@ -63,19 +65,15 @@ public class MapController {
 		map[179][66] = 5;
 		map[179][67] = 5;
 		map[179][68] = 5;
-		*/
+		 */
 		for (int x = 0; x < map.length; x++) { //r�kkerne
 			for (int y = 0; y < map[x].length; y++) { //kolonnerne
-				
-			//	System.out.print(map[x][y]);
+
+				//	System.out.print(map[x][y]);
 
 				if(map[x][y] == 9) {
 					robot = new Robot(x,y);
-<<<<<<< HEAD
-					
-=======
 					System.out.println("Robot:   " +robot);
->>>>>>> branch 'Angle' of https://github.com/MichaelWestergaard/CDIO-S4.git
 				}
 				if(map[x][y] == 3) {
 					directionVector = new Direction(x,y);
@@ -86,8 +84,8 @@ public class MapController {
 				}
 
 				if(map[x][y] == 5) {
-						smallGoal = new Goal(x,y);
-					 /*else if (map[x+15][y] == 5) {
+					smallGoal = new Goal(x,y);
+					/*else if (map[x+15][y] == 5) {
 						bigGoal = new Goal(x,y);
 					}*/
 				}
@@ -96,7 +94,7 @@ public class MapController {
 					if(map[x+3][y] == 1 && map[x][y+3] == 1 && map[x+3][y+3] == 1) {
 
 						ballStatus = true;
-						
+
 						map[x][y] = 9;
 						map[x+1][y] = 0;
 						map[x][y+1] = 0;
@@ -106,8 +104,18 @@ public class MapController {
 					}
 				}
 
-			}	
-			System.out.println();
+			}
+		}
+		System.out.println();
+
+		int minusCounter = 0;
+		for(int test = 0; test < 120;test++) {
+			System.out.println(test);
+			if(map[1][test] == -1) {
+				minusCounter++;
+				System.out.println("Antal forhindringer: " + minusCounter);
+			}
+
 		}
 		findShortestPath();	
 	}
@@ -150,8 +158,8 @@ public class MapController {
 		int iterator = coordinates.size();
 		int operationNum = 0;
 
-		
-		
+
+
 		for(int i = 0; i < iterator; i++) {
 			Collections.sort(coordinates, new Sort());
 			double[] test = coordinates.get(0).getCoordinates();
@@ -164,26 +172,26 @@ public class MapController {
 				// instructionMap.put("rotate" + (operationNum + 1), robot.angleBetween(directionVector, coordinates.get(j)));
 				operationNum += 2;
 			}
-		
+
 			System.out.println("Antal bolde der mangler at blive besøgt: "+ coordinates.size());
 
 			directionVector.setCoordinates((test[0] + test[0] - robot.x)  , (test[1] + test[1] - robot.y ));
 			robot.setCoordinates(test[0], test[1]);	
 
-			
+
 			// drej 180 efter hvert
 			//	directionVector.setCoordinates(robot.x * 0.5, robot.y * 0.5);
 
 			coordinates.remove(0);
-			
+
 			if(coordinates.size() == 0) {
-				
+
 				System.out.println("dist to goalPoint: " + robot.dist(goalPoint) + " angle to goalPoint: " + robot.angleBetween(directionVector, goalPoint));
 				System.out.println("Angle turning towards the goal" + robot.angleBetween(goalPoint, smallGoal));
 			}
-			
+
 		}
-		
+
 		System.out.println(instructionMap);
 	}
 
