@@ -48,8 +48,9 @@ public class MapController {
 	
 	public void loadMap(int[][] loadMap) {
 		map = loadMap;
+		ready = false;
 		findBalls();
-		findShortestPath();
+		//findShortestPath();
 	}
 	
 	public boolean isReady() {

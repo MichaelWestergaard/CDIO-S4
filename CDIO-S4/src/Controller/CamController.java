@@ -49,6 +49,7 @@ import org.opencv.videoio.VideoCapture;
 
 import DTO.Ball;
 import DTO.Camera;
+import DTO.Robot;
 
 public class CamController {
 
@@ -72,12 +73,15 @@ public class CamController {
     private CaptureTask captureTask;
     private Camera cameraSettings;
     private boolean useCam = true;
-    private Mat mask, inRange, edges, ballsMask;
+    private Mat mask, inRange, edges, ballsMask, robotMask;
     private MapController mapController;
     
     private FrameHelper frameHelper = new FrameHelper();
     
     String imagePath = "Images/findNewWall3.jpg";
+    
+    DTO.Point directionPoint;
+    Robot robot;
 	
 	public CamController(boolean useCam) {
 		this.useCam = useCam;
@@ -332,6 +336,7 @@ public class CamController {
 		}
 		
 		findBalls(matFrame);
+		findRobot(matFrame);
 		
 		
 		if(verticesLast != null && rectLast != null) {
@@ -344,48 +349,155 @@ public class CamController {
 		if(crossI > 0) {
 			Imgproc.drawContours(matFrame, contoursWalls, crossI, new Scalar(255,0,0), Imgproc.FILLED);
 		}
+
+		Imgproc.circle(matFrame, new Point(robot.x, robot.y), 2, new Scalar(0,0,255), Imgproc.FILLED);
+
+		Imgproc.line(matFrame, new Point(robot.x, robot.y), new Point(directionPoint.x, directionPoint.y), new Scalar(0,0,255));
 		
 		if(areaLast > 0 && crossArea > 0) {
-			generateMap(realImg);
-			if(getMap() != null && mapController.isReady())
-				mapController.loadMap(getMap());
+			if(mapController.isReady()) {
+				generateMap(realImg);
+				if(getMap() != null)
+					mapController.loadMap(getMap());
+			}
 		}
+		
 		
         imgCaptureLabel.setIcon(new ImageIcon(HighGui.toBufferedImage(matFrame)));
         imgDetectionLabel.setIcon(new ImageIcon(HighGui.toBufferedImage(ballsMask)));
         videoFrame.repaint();
 	}
 	
-	private void findRobot(Mat mask) {
+	private void findRobot(Mat matFrame) {
+		Mat matFrameCopy = matFrame.clone();
+		
+		robotMask = new Mat();
 		
 		triangles.clear();
+
+		Imgproc.blur(matFrameCopy, matFrameCopy, new Size(7,7));
 		
 		List<MatOfPoint> contoursRoboto = new ArrayList<MatOfPoint>();
+				
+		Imgproc.cvtColor(matFrameCopy, robotMask, Imgproc.COLOR_BGR2GRAY);
+		
+		Scalar lower = new Scalar(cameraSettings.getLowHueBalls(), cameraSettings.getLowSatBalls(), cameraSettings.getLowValBalls());
+	    Scalar upper = new Scalar(cameraSettings.getMaxHueBalls(), cameraSettings.getMaxSatBalls(), cameraSettings.getMaxValBalls());
+	    
+        Core.inRange(robotMask, lower, upper, robotMask);
+
 		Mat canny = new Mat();
 		
-		Imgproc.Canny(mask, canny, 250, 0);
-		Imgproc.findContours(canny, contoursRoboto, new Mat(), Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_NONE);
+		int lowThresh = 100;
+		
+        Imgproc.Canny(robotMask, canny, lowThresh, lowThresh * 3, 3, false);
+		Imgproc.findContours(canny, contoursRoboto, new Mat(), Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
 
 		MatOfPoint2f matOfPoint2f = new MatOfPoint2f();
 		MatOfPoint2f approxCurve = new MatOfPoint2f();
 		
-		/*
-		for (int i = 0; i < contoursRoboto.size(); i++) {
-			Imgproc.drawContours(circles, contoursRoboto, i, new Scalar(255, 0, 0));
-		}
-		*/
+		Imgproc.drawContours(matFrame, contoursRoboto, -1, new Scalar(255,0,0));
 		
-		for (MatOfPoint contour : contoursRoboto) {
+		double areaLast = 0;
+		MatOfPoint contourLast = null;
+		int contourI = -1;
+		
+		for (int i = 0; i < contoursRoboto.size(); i++) {
+			MatOfPoint contour = contoursRoboto.get(i);
 		    double contourArea = Imgproc.contourArea(contour);
-		    matOfPoint2f.fromList(contour.toList());
-		    Imgproc.approxPolyDP(matOfPoint2f, approxCurve, Imgproc.arcLength(matOfPoint2f, true) * 0.01, true);
-		    long total = approxCurve.total();
 		    
-		    Point[] center = approxCurve.toArray();
-		    
-		    if (total == 3) {
-		    	triangles.add(new Ball((int)Math.round(center[0].x), (int)Math.round(center[0].y)));
-		    }
+		    if(contourArea > areaLast && contourArea > 400) {
+		    	areaLast = contourArea;
+		    	contourLast = contour;
+		    	contourI = i;
+			}
+		}
+
+		if(contourI != -1) {
+		
+			List<Point> pointsContour = contourLast.toList();
+		
+	        Collections.sort(pointsContour, new SortCoordinates());
+	        
+	        List<Point> triangle = new ArrayList<Point>();
+	        
+	        Point top = null, left = null, right = null;
+	        
+	        boolean upward = true;
+
+	        for(Point point : pointsContour) {
+	        	if(top == null) {
+	        		top = point;
+	        		left = point;
+	        		right = point;
+	        	} else {
+	        		if(left.x > point.x) {
+	        			left = point;
+	        		} else if(right.x < point.x) {
+	        			right = point;
+	        		} else if(point.y < top.y) {
+	        			top = point;
+	        		}
+	        	}
+	        }
+
+	        if(left.y-50 > top.y || right.y-50 > top.y) {
+        		upward = true;
+        	} else {
+        		upward = false;
+        	}
+	        
+	        for(Point point : pointsContour) {
+	        	
+	        	if(upward) {
+	        		if(point.y < top.y) {
+	        			top = point;
+	        		}
+	        	} else {
+	        		if(point.y > top.y) {
+	        			top = point;
+	        		}
+	        	}
+	        }
+	        
+	        Imgproc.circle(matFrame, left, 3, new Scalar(0,0, 255), Imgproc.FILLED);
+	        Imgproc.circle(matFrame, right, 3, new Scalar(0,0, 255), Imgproc.FILLED);
+	        Imgproc.circle(matFrame, top, 3, new Scalar(0,0, 255), Imgproc.FILLED);
+	        
+	        double distTopRight = Math.hypot(top.x-right.x, top.y-right.y);
+	        double distTopLeft = Math.hypot(top.x-left.x, top.y-left.y);
+	        double distLeftRight = Math.hypot(left.x-right.x, left.y-right.y);
+	        
+	        if(distTopRight > 30 && distTopLeft > 30 && distLeftRight > 30) {
+	        	double sumTop = distTopLeft + distTopRight;
+	        	double sumLeft = distTopLeft + distLeftRight;
+	        	double sumRight = distLeftRight + distTopRight;
+	        	
+	        	if(sumTop > sumLeft && sumTop > sumRight) {
+	        		directionPoint = new DTO.Point(top.x, top.y);
+	        	} else if(sumLeft > sumTop && sumLeft > sumRight) {
+	        		directionPoint = new DTO.Point(left.x, left.y);
+	        	} else if(sumRight > sumTop && sumRight > sumLeft) {
+	        		directionPoint = new DTO.Point(right.x, right.y);
+	        	}
+	        	
+	        	robot = new Robot((top.x+right.x+left.x)/3, (top.y+right.y+left.y)/3);
+	        	
+	        }
+		}
+		
+	}
+	
+	class SortCoordinates implements Comparator<Point>{
+
+		@Override
+		public int compare(Point point1, Point point2) {
+			int result = Double.compare(point1.x, point2.x);
+	         if ( result == 0 ) {
+	           // both X are equal -> compare Y too
+	           result = Double.compare(point1.y, point2.y);
+	         } 
+	         return result;
 		}
 		
 	}
@@ -454,7 +566,6 @@ public class CamController {
 			Imgproc.putText(matFrame, "bold", new Point(ball.x, ball.y-20), 3, 1.5, new Scalar(0, 0, 255));
 		}
 		
-		System.out.println("Balls found: " + balls.size());
 	}
 	
 	
@@ -475,6 +586,15 @@ public class CamController {
 		}
         
 		ArrayList<Ball> notFound = new ArrayList<Ball>();
+		
+		int botX = (int) Math.round(robot.x/gridSizeHorizontal);
+		int botY = (int) Math.round(robot.y/gridSizeVertical);
+		
+		int directionX = (int) Math.round(directionPoint.x/gridSizeHorizontal);
+		int directionY = (int) Math.round(directionPoint.y/gridSizeVertical);
+		
+		map[botX][botY] = 9;
+		map[directionX][directionY] = 3;
 		
 		for(Ball ball : balls) {
 			int i = (int) Math.round(ball.x/gridSizeHorizontal);
@@ -526,10 +646,12 @@ public class CamController {
 		int counter = 0;
 		for(int i = 0; i < 180; i++) {
 			for(int j = 0; j < 120; j++) {
+				System.out.print(map[i][j]);
 				if(map[i][j] == 1) {
 					counter++;
 				}
 			}
+			System.out.println();
 		}
 		System.out.println("Number of 1's: " + counter + " which is " + counter + "/16 = " + counter/16 + " balls");
 	}
@@ -592,7 +714,7 @@ public class CamController {
             
             
             imgCaptureLabel.setIcon(new ImageIcon(HighGui.toBufferedImage(matFrame)));
-            imgDetectionLabel.setIcon(new ImageIcon(HighGui.toBufferedImage(edges)));
+            imgDetectionLabel.setIcon(new ImageIcon(HighGui.toBufferedImage(ballsMask)));
             videoFrame.repaint();
             
         }

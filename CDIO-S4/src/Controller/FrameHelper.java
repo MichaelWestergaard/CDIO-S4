@@ -27,7 +27,7 @@ public class FrameHelper extends JFrame {
 		mainPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
 		menu.setSize(700, 400);
 		
-		minBallSize = new JSlider(0, 100);
+		minBallSize = new JSlider(0, 25);
 		minBallSize.setPaintTicks(true);
 		addToMainPanel(minBallSize, "Min Bold størrelse");
 		
