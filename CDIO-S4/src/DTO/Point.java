@@ -42,13 +42,15 @@ public class Point {
 			ballAngle += 360.0;
 		}
 		
-		if(directionAngle > ballAngle) {
-			return directionAngle - ballAngle;
-		} else if(directionAngle < ballAngle) {
-			return ballAngle - directionAngle;
-		} else {
-			return 0.0;
+		double finalAngle = directionAngle - ballAngle;
+		
+		if(finalAngle > 180.0) {
+			finalAngle -= 360.0;
+		} else if(finalAngle < -180.0) {
+			finalAngle += 360.0;
 		}
+		
+		return finalAngle;
 	}  
 	
 	public double angleBetween(Point dpoint, Point ballpoint) {
