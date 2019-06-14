@@ -79,7 +79,7 @@ public class CamController {
     
     private FrameHelper frameHelper = new FrameHelper();
     
-    String imagePath = "Images/findNewWall3.jpg";
+    String imagePath = "Images/findRoboto.jpg";
     
     DTO.Point directionPoint;
     Robot robot;
@@ -284,6 +284,8 @@ public class CamController {
 		Mat threshold = new Mat();
 		edges = new Mat();
 		
+		Imgproc.blur(capturedFrame, capturedFrame, new Size(7,7));
+		
 		Imgproc.cvtColor(capturedFrame, mask, Imgproc.COLOR_BGR2HSV);
 		
 		//Imgproc.adaptiveThreshold(mask, threshold, 255, Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C, Imgproc.THRESH_BINARY, 11, 2);
@@ -307,6 +309,7 @@ public class CamController {
 		double areaLast = 0;
 		double crossArea = 0.0;
 		int crossI = -1;
+		MatOfPoint crossContour = null;
 		Point[] verticesLast = null;
 		RotatedRect rectLast = null;
 		
@@ -329,9 +332,10 @@ public class CamController {
 				}
 			}else {
 				double crossAreaLocal = Imgproc.contourArea(approxCurve);
-				if(crossAreaLocal > crossArea && crossAreaLocal >= 1000 && crossAreaLocal <= 1200) {
+				if(crossAreaLocal > crossArea && crossAreaLocal >= (int)frameHelper.minCrossArea.getValue() && crossAreaLocal <= (int)frameHelper.maxCrossArea.getValue()) {
 					crossArea = crossAreaLocal;
 					crossI = i;
+					crossContour = contoursWalls.get(i);
 				}
 				
 			}
@@ -346,11 +350,117 @@ public class CamController {
 			}
 		}
 		
+		Mat src_mat=new Mat(4,1,CvType.CV_32FC2);
+	    Mat dst_mat=new Mat(4,1,CvType.CV_32FC2);
+
+	    src_mat.put(0, 0, verticesLast[2].x, verticesLast[2].y, verticesLast[3].x, verticesLast[3].y, verticesLast[1].x, verticesLast[1].y, verticesLast[0].x, verticesLast[0].y);
+	    dst_mat.put(0, 0, 0.0, 0.0, rectLast.size.height, 0.0, 0.0, rectLast.size.width, rectLast.size.height, rectLast.size.width);
+	    Mat perspectiveTransform = Imgproc.getPerspectiveTransform(src_mat, dst_mat);
+
+	    Imgproc.warpPerspective(matFrame, matFrame, perspectiveTransform, new Size(rectLast.size.height, rectLast.size.width));
+		
 		findBalls(matFrame);
 		findRobot(matFrame);
+		
 		if(crossI > 0) {
-			Imgproc.drawContours(matFrame, contoursWalls, crossI, new Scalar(255,0,0), Imgproc.FILLED);
+			//Imgproc.drawContours(matFrame, contoursWalls, crossI, new Scalar(255,0,0), Imgproc.FILLED);
+			
+			if(crossContour != null) {
+				//TODO: FIX DIS SHIT
+				System.out.println(crossContour);
+				List<Point> pointsContour = crossContour.toList();
+			
+		        Collections.sort(pointsContour, new SortCoordinates());
+		        
+		        List<Point> cross = new ArrayList<Point>();
+		        
+		        Point topL = null, bottomL = null, leftL = null, rightL = null;
+
+		        Point topR = null, bottomR = null, leftR = null, rightR = null;
+		        
+		        double gridSizeHorizontal = matFrame.width()/180;
+		        double gridSizeVertical = matFrame.height()/120;
+		        
+		        map = new int[180][120];
+		        
+		        for (int i = 0; i < 180; i++) {
+					for (int j = 0; j < 120; j++) {
+						map[i][j] = 0;
+					}
+				}
+		        
+
+	        	double gridSizeHorizontald = matFrame.width()/180;
+	            double gridSizeVerticald = matFrame.height()/120;
+		        
+		        for(Point point : pointsContour) {
+		        	/*
+		        	if(topL == null) {
+		        		topL = point;
+		        		bottomL = point;
+		        		leftL = point;
+		        		rightL = point;
+		        		topR = point;
+		        		bottomR = point;
+		        		leftR = point;
+		        		rightR = point;
+		        	} else {
+		        		if(leftL.x > point.x) {
+		        			leftL = point;
+		        		}
+		        		
+		        		if(rightL.x < point.x) {
+		        			rightL = point;
+		        		} else if(rightR.x < point.x || point.y > rightL.y) {
+		        			rightR = point;
+		        		}
+		        		
+		        		if(point.y < topL.y) {
+		        			topL = point;
+		        		} else if(point.y <= topR.y || (point.x > topL.x && point.y <= topL.y)) {
+		        			topR = point;
+		        		}
+		        		
+		        		if(point.y >= bottomL.y && point.x >= bottomL.x) {
+		        			bottomL = point;
+		        		} else if(point.y >= bottomR.y && point.x < bottomL.x) {
+		        			bottomR = point;
+		        		}
+		        	}
+		        	*/
+		            
+		    		int botX = (int) Math.round(point.x/gridSizeHorizontal);
+		    		int botY = (int) Math.round(point.y/gridSizeVertical);
+		    		map[botX][botY] = 1;
+		        }
+		        
+		        for(int i = 0; i < 180; i++) {
+					for(int j = 0; j < 120; j++) {
+						System.out.print(map[i][j]);
+					}
+					System.out.println();
+				}
+
+		        /*
+		        System.out.println(rightL + " " + rightR);
+
+		        Imgproc.circle(matFrame, bottomL, 3, new Scalar(0,255, 0), Imgproc.FILLED);
+		        Imgproc.circle(matFrame, bottomR, 3, new Scalar(0,255, 0), Imgproc.FILLED);
+		        
+		        Imgproc.circle(matFrame, leftL, 3, new Scalar(0,255, 0), Imgproc.FILLED);
+
+		        Imgproc.circle(matFrame, leftR, 3, new Scalar(0,255, 0), Imgproc.FILLED);
+		        
+		        Imgproc.circle(matFrame, topL, 3, new Scalar(0,255, 0), Imgproc.FILLED);
+		        Imgproc.circle(matFrame, topR, 3, new Scalar(0,255, 0), Imgproc.FILLED);
+		        Imgproc.circle(matFrame, rightL, 3, new Scalar(0,255, 0), Imgproc.FILLED);
+		        Imgproc.circle(matFrame, rightR, 3, new Scalar(0,255, 0), Imgproc.FILLED);
+				*/
+		        	
+		        
+			}
 		}
+		
 
 		if(robot != null && directionPoint != null) {
 			mapController.robot = robot;
@@ -375,7 +485,7 @@ public class CamController {
 		
 		
         imgCaptureLabel.setIcon(new ImageIcon(HighGui.toBufferedImage(matFrame)));
-        imgDetectionLabel.setIcon(new ImageIcon(HighGui.toBufferedImage(ballsMask)));
+        imgDetectionLabel.setIcon(new ImageIcon(HighGui.toBufferedImage(edges)));
         videoFrame.repaint();
 	}
 	
@@ -714,7 +824,7 @@ public class CamController {
             updateFrame();
             
             imgCaptureLabel.setIcon(new ImageIcon(HighGui.toBufferedImage(matFrame)));
-            imgDetectionLabel.setIcon(new ImageIcon(HighGui.toBufferedImage(ballsMask)));
+            imgDetectionLabel.setIcon(new ImageIcon(HighGui.toBufferedImage(edges)));
             videoFrame.repaint();
             
         }

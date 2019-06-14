@@ -4,10 +4,14 @@ import java.awt.FlowLayout;
 import java.awt.event.ActionListener;
 
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
+import javax.swing.JSpinner;
+import javax.swing.JTextField;
+import javax.swing.SpinnerNumberModel;
 import javax.swing.event.ChangeListener;
 
 public class FrameHelper extends JFrame {
@@ -17,6 +21,7 @@ public class FrameHelper extends JFrame {
 	JPanel mainPanel;
 	JSlider minBallSize, maxBallSize, lowHueWalls, maxHueWalls, lowSatWalls, maxSatWalls, lowValWalls, maxValWalls;
 	JSlider lowHueBalls, maxHueBalls, lowSatBalls, maxSatBalls, lowValBalls, maxValBalls;
+	JSpinner minCrossArea, maxCrossArea;
 	JButton save;
 	
 	public JFrame calibrationMenu() {
@@ -27,15 +32,16 @@ public class FrameHelper extends JFrame {
 		mainPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
 		menu.setSize(700, 400);
 		
-		minBallSize = new JSlider(0, 25);
-		minBallSize.setPaintTicks(true);
-		addToMainPanel(minBallSize, "Min Bold størrelse");
+		//Cross in the middle
+		minCrossArea = new JSpinner();
+		minCrossArea.setModel(new SpinnerNumberModel(1000, 0, 10000, 100));
+		addToMainPanel(minCrossArea, "Min Cross Area");
 		
-		maxBallSize = new JSlider(0, 25);
-		maxBallSize.setPaintTicks(true);
-		addToMainPanel(maxBallSize, "Max Bold størrelse");
+		maxCrossArea = new JSpinner();
+		maxCrossArea.setModel(new SpinnerNumberModel(8000, 0, 10000, 100));
+		addToMainPanel(maxCrossArea, "Max Cross Area");
 		
-		//Walls
+		//Walls		
 		//Hue
 		lowHueWalls = new JSlider(0, 255);
 		lowHueWalls.setPaintTicks(true);
@@ -64,6 +70,14 @@ public class FrameHelper extends JFrame {
 		addToMainPanel(maxValWalls, "Max Value Walls");
 		
 		// Balls
+		minBallSize = new JSlider(0, 25);
+		minBallSize.setPaintTicks(true);
+		addToMainPanel(minBallSize, "Min Bold størrelse");
+		
+		maxBallSize = new JSlider(0, 25);
+		maxBallSize.setPaintTicks(true);
+		addToMainPanel(maxBallSize, "Max Bold størrelse");
+		
 		// Hue
 		lowHueBalls = new JSlider(0, 255);
 		lowHueBalls.setPaintTicks(true);
@@ -101,10 +115,10 @@ public class FrameHelper extends JFrame {
 		return menu;
 	}
 	
-	private void addToMainPanel(JSlider slider, String text) {
+	private void addToMainPanel(JComponent component, String text) {
 		JPanel panel = new JPanel();
 		panel.add(new JLabel(text));
-		panel.add(slider);
+		panel.add(component);
 		
 		mainPanel.add(panel);
 	}
@@ -112,6 +126,8 @@ public class FrameHelper extends JFrame {
 	//Getters and setters
 
 	public void setListener(ChangeListener listener) {
+		minCrossArea.addChangeListener(listener);
+		maxCrossArea.addChangeListener(listener);
 		minBallSize.addChangeListener(listener);
 		maxBallSize.addChangeListener(listener);
 		lowHueWalls.addChangeListener(listener);

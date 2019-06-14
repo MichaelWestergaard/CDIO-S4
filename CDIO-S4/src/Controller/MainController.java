@@ -4,7 +4,7 @@ public class MainController {
 
 	RobotController robotController = new RobotController();
 
-	CamController camController = new CamController(true);
+	CamController camController = new CamController(false);
 	MapController mapController = new MapController();
 		
 	public void start() {
