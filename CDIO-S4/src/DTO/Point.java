@@ -23,15 +23,33 @@ public class Point {
 		return Math.abs(Math.sqrt(Math.pow(point.x - x, 2) + Math.pow(point.y - y, 2)));
 	}
 
-	public double calcAngle(Point dpoint, Point ballpoint) {
-		Point v1, v2;
-		v1 = new Point(dpoint.x - x,dpoint.y - y);
-		v2 = new Point(ballpoint.x - x,ballpoint.y - y);
+	public double calcAngle(Point directionPoint, Point ballPoint) {
+		Point directionVector, ballVector;
+		directionVector = new Point(directionPoint.x - x,directionPoint.y - y);
+		ballVector = new Point(ballPoint.x - x,ballPoint.y - y);
 		
-		return  Math.round(Math.toDegrees(Math.acos((v1.x * v2.x + v1.y * v2.y) / 
-				((Math.sqrt(Math.pow(v1.x, 2) + Math.pow(v1.y,2))) 
-				* Math.sqrt(Math.pow(v2.x, 2) + Math.pow(v2.y, 2)))))*100)/100;
-		}  
+		/*return  Math.round(Math.toDegrees(Math.acos((directionVector.x * ballVector.x + directionVector.y * ballVector.y) / 
+				((Math.sqrt(Math.pow(directionVector.x, 2) + Math.pow(directionVector.y,2))) 
+				* Math.sqrt(Math.pow(ballVector.x, 2) + Math.pow(ballVector.y, 2)))))*100)/100;*/
+		
+		double directionAngle = Math.toDegrees(Math.atan2(directionVector.y, directionVector.x));		
+		if(directionAngle < 0.0) {
+			directionAngle += 360.0;
+		} 
+		
+		double ballAngle = Math.toDegrees(Math.atan2(ballVector.y, ballVector.x));		
+		if(ballAngle < 0.0) {
+			ballAngle += 360.0;
+		}
+		
+		if(directionAngle > ballAngle) {
+			return directionAngle - ballAngle;
+		} else if(directionAngle < ballAngle) {
+			return ballAngle - directionAngle;
+		} else {
+			return 0.0;
+		}
+	}  
 	
 	public double angleBetween(Point dpoint, Point ballpoint) {
 		/*if(calcAngle(dpoint,ballpoint)>180) {
