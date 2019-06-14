@@ -75,6 +75,7 @@ public class CamController {
     private boolean useCam = true;
     private Mat mask, inRange, edges, ballsMask, robotMask;
     private MapController mapController;
+    private boolean run = false;
     
     private FrameHelper frameHelper = new FrameHelper();
     
@@ -251,6 +252,7 @@ public class CamController {
 
 					jaxbMarshaller.marshal(camera, file);
 					jaxbMarshaller.marshal(camera, System.out);
+					run = true;
 				} catch (JAXBException e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
@@ -335,8 +337,6 @@ public class CamController {
 			}
 		}
 		
-		findBalls(matFrame);
-		findRobot(matFrame);
 		
 		
 		if(verticesLast != null && rectLast != null) {
@@ -346,11 +346,14 @@ public class CamController {
 			}
 		}
 		
+		findBalls(matFrame);
+		findRobot(matFrame);
 		if(crossI > 0) {
 			Imgproc.drawContours(matFrame, contoursWalls, crossI, new Scalar(255,0,0), Imgproc.FILLED);
 		}
 
 		if(robot != null && directionPoint != null) {
+			mapController.robot = robot;
 			Imgproc.circle(matFrame, new Point(robot.x, robot.y), 2, new Scalar(0,0,255), Imgproc.FILLED);
 
 			Imgproc.line(matFrame, new Point(robot.x, robot.y), new Point(directionPoint.x, directionPoint.y), new Scalar(0,0,255));
@@ -358,10 +361,15 @@ public class CamController {
 		
 		
 		if(areaLast > 0 && crossArea > 0) {
-			if(mapController.isReady()) {
+			if(mapController.isReady() && run) {
 				generateMap(realImg);
 				if(getMap() != null)
-					mapController.loadMap(getMap());
+					try {
+						mapController.loadMap(getMap());
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 			}
 		}
 		
@@ -603,23 +611,17 @@ public class CamController {
 			int i = (int) Math.round(ball.x/gridSizeHorizontal);
 			int j = (int) Math.round(ball.y/gridSizeVertical);
 			
-			System.out.println("i: " + i + " j: " + j);
-			
 			if(i < 3) {
 				i = 3;
-				System.out.println("Adjusted i to 3");
 			}
 			if(i > 179) {
 				i = 179;
-				System.out.println("Adjusted i to 179");
 			}
 			if(j < 2) {
 				j = 2;
-				System.out.println("Adjusted j to 2");
 			}
 			if(j > 118) {
 				j = 118;
-				System.out.println("Adjusted j to 118");
 			}
 			map[i-3][j-2] = 1;
 			map[i-3][j-1] = 1;
@@ -649,14 +651,11 @@ public class CamController {
 		int counter = 0;
 		for(int i = 0; i < 180; i++) {
 			for(int j = 0; j < 120; j++) {
-				System.out.print(map[i][j]);
 				if(map[i][j] == 1) {
 					counter++;
 				}
 			}
-			System.out.println();
 		}
-		System.out.println("Number of 1's: " + counter + " which is " + counter + "/16 = " + counter/16 + " balls");
 	}
 	
 	private static void showImage(Mat mat) {
@@ -713,8 +712,6 @@ public class CamController {
 
             //Findwalls etc her
             updateFrame();
-            
-            
             
             imgCaptureLabel.setIcon(new ImageIcon(HighGui.toBufferedImage(matFrame)));
             imgDetectionLabel.setIcon(new ImageIcon(HighGui.toBufferedImage(ballsMask)));

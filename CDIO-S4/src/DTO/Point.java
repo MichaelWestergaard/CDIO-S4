@@ -34,9 +34,9 @@ public class Point {
 		}  
 	
 	public double angleBetween(Point dpoint, Point ballpoint) {
-		if(calcAngle(dpoint,ballpoint)>180) {
+		/*if(calcAngle(dpoint,ballpoint)>180) {
 			return Math.acos(360 - calcAngle(dpoint,ballpoint));
-		}
+		}*/
 		return calcAngle(dpoint,ballpoint);
 
 	}

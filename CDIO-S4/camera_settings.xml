@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <camera>
-    <lowHueBalls>0</lowHueBalls>
+    <lowHueBalls>38</lowHueBalls>
     <lowHueWalls>0</lowHueWalls>
     <lowSatBalls>255</lowSatBalls>
     <lowSatWalls>211</lowSatWalls>
     <lowValBalls>255</lowValBalls>
     <lowValWalls>0</lowValWalls>
-    <maxBallSize>15</maxBallSize>
-    <maxHueBalls>204</maxHueBalls>
-    <maxHueWalls>11</maxHueWalls>
-    <maxSatBalls>255</maxSatBalls>
+    <maxBallSize>5</maxBallSize>
+    <maxHueBalls>200</maxHueBalls>
+    <maxHueWalls>15</maxHueWalls>
+    <maxSatBalls>181</maxSatBalls>
     <maxSatWalls>255</maxSatWalls>
     <maxValBalls>255</maxValBalls>
     <maxValWalls>255</maxValWalls>
-    <minBallSize>0</minBallSize>
+    <minBallSize>4</minBallSize>
 </camera>
