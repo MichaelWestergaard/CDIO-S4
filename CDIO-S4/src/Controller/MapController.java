@@ -230,8 +230,8 @@ public class MapController {
 			
 			
 			
-
-			int direction = GetDirection(directionVector, coordinates.get(0), robot);
+			instructionMap.put("rotate" + operationNum, robot.angleBetween(directionVector, coordinates.get(0)));
+			/*int direction = GetDirection(directionVector, coordinates.get(0), robot);
 			if(direction > 0) {
 				System.out.println("Roterer til højre");
 				instructionMap.put("rotate" + operationNum, robot.angleBetween(directionVector, coordinates.get(0)));
@@ -248,7 +248,7 @@ public class MapController {
 				double newDirectionY = Math.sin(10.0 * robot.x) + Math.cos(10.0 * robot.y);
 				directionVector.setCoordinates(newDirectionX, newDirectionY);
 				continue;
-			}
+			}*/
 			
 			instructionMap.put("travel" + (operationNum + 1), robot.dist(coordinates.get(0)));
 			System.out.println("travel" + (operationNum + 1) + " " + robot.dist(coordinates.get(0)));
@@ -274,7 +274,7 @@ public class MapController {
 
 			
 			
-			//robot.setCoordinates(closestBallCoordinates[0], closestBallCoordinates[1]);	
+			robot.setCoordinates(closestBallCoordinates[0], closestBallCoordinates[1]);	
 			operationNum += 2;
 
 			coordinates.remove(0);
@@ -334,5 +334,13 @@ public class MapController {
 		}
 
 	}
+	
+
+	
+	
+	
+	
+	
+	
 
 }

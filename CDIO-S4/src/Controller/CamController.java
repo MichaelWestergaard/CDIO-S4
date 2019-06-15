@@ -84,6 +84,12 @@ public class CamController {
     private Mat mask, inRange, edges, ballsMask, robotMask;
     private MapController mapController;
     private boolean run = false;
+    private boolean firstFrame = true;
+    private Point topLeft, topRight, bottomLeft, bottomRight;
+    private Vector<Point> corners, target;
+    private double minXVal, maxXVal, width, minYVal, maxYVal, height;
+    private Mat perspectiveTransform;
+    private double cameraHeight = 168.8;
     
     private FrameHelper frameHelper = new FrameHelper();
     
@@ -99,7 +105,7 @@ public class CamController {
 		matFrame = new Mat();
 
 		if(useCam) {
-			videoCapture = new VideoCapture(0);
+			videoCapture = new VideoCapture(1);
 	        if (!videoCapture.isOpened()) {
 	            System.err.println("Cannot open camera");
 	            System.exit(0);
@@ -368,6 +374,8 @@ public class CamController {
 
 		    Imgproc.warpPerspective(matFrame, matFrame, perspectiveTransform, new Size(rectLast.size.height, rectLast.size.width));
 		    */
+			undistortImage();
+			warpImage(verticesLast);
 		}
 
 		//undistortImage();
@@ -488,7 +496,9 @@ public class CamController {
 		
         imgCaptureLabel.setIcon(new ImageIcon(HighGui.toBufferedImage(matFrame)));
         imgDetectionLabel.setIcon(new ImageIcon(HighGui.toBufferedImage(edges)));
-        videoFrame.repaint();
+
+        if(firstFrame)
+        	videoFrame.repaint();
 	}
 	
 	private void findRobot(Mat matFrame) {
@@ -819,6 +829,7 @@ public class CamController {
         }
         @Override
         protected void process(List<Mat> frames) {
+        	
             Mat imgCapture = frames.get(frames.size() - 1);
             matFrame = imgCapture;
 
@@ -829,7 +840,9 @@ public class CamController {
             
             imgCaptureLabel.setIcon(new ImageIcon(HighGui.toBufferedImage(matFrame)));
             imgDetectionLabel.setIcon(new ImageIcon(HighGui.toBufferedImage(edges)));
+            
             videoFrame.repaint();
+            
             
         }
     }
@@ -941,74 +954,76 @@ public class CamController {
 		
 	}*/
 	
-	private void warpImage() {
-		Point[] verticesLast = findCorners();
+	private void warpImage(Point[] verticesLast) {
 		
 		if(verticesLast == null) {
 			System.out.println("Billedet kan ikke warpes da der ikke blev fundet nogle hjørner");
 		} else if(verticesLast.length != 4) {
 			System.out.println("Billedet kan ikke warpes da der ikke blev fundet præcis 4 hjørner");
 		} else {
-			Point topLeft = new Point(), topRight = new Point(), bottomLeft = new Point(), bottomRight = new Point();
-			
-			for(int i = 0; i < verticesLast.length; i++) {
-				int countX = 0, countY = 0;
-				Point vertex = verticesLast[i];
-				if(vertex.x > verticesLast[(i+1)%4].x) {
-					countX++;
-				}
-				if(vertex.y > verticesLast[(i+1)%4].y) {
-					countY++;
-				}
-				if(vertex.x > verticesLast[(i+2)%4].x) {
-					countX++;
-				}
-				if(vertex.y > verticesLast[(i+2)%4].y) {
-					countY++;
-				}
-				if(vertex.x > verticesLast[(i+3)%4].x) {
-					countX++;
-				}
-				if(vertex.y > verticesLast[(i+3)%4].y) {
-					countY++;
-				}
+			if(firstFrame) {
+				firstFrame = false;
 				
-				if(countX <= 1 && countY <= 1 ) {
-					topLeft = vertex;
-				} else if(countX >= 2 && countY <= 1) {
-					topRight = vertex;
-				} else if(countX <= 1 && countY >= 2) {
-					bottomLeft = vertex;
-				} else if(countX >= 2 && countY >= 2) {
-					bottomRight = vertex;
+				for(int i = 0; i < verticesLast.length; i++) {
+					int countX = 0, countY = 0;
+					Point vertex = verticesLast[i];
+					if(vertex.x > verticesLast[(i+1)%4].x) {
+						countX++;
+					}
+					if(vertex.y > verticesLast[(i+1)%4].y) {
+						countY++;
+					}
+					if(vertex.x > verticesLast[(i+2)%4].x) {
+						countX++;
+					}
+					if(vertex.y > verticesLast[(i+2)%4].y) {
+						countY++;
+					}
+					if(vertex.x > verticesLast[(i+3)%4].x) {
+						countX++;
+					}
+					if(vertex.y > verticesLast[(i+3)%4].y) {
+						countY++;
+					}
+					
+					if(countX <= 1 && countY <= 1 ) {
+						topLeft = vertex;
+					} else if(countX >= 2 && countY <= 1) {
+						topRight = vertex;
+					} else if(countX <= 1 && countY >= 2) {
+						bottomLeft = vertex;
+					} else if(countX >= 2 && countY >= 2) {
+						bottomRight = vertex;
+					}
+					
 				}
-				
-			}
 
-			Vector<Point> corners = new Vector<Point>();
-			corners.add(topLeft);
-			corners.add(topRight);
-			corners.add(bottomLeft);
-			corners.add(bottomRight);
+				corners = new Vector<Point>();
+				corners.add(topLeft);
+				corners.add(topRight);
+				corners.add(bottomLeft);
+				corners.add(bottomRight);
+				
+				minXVal = Math.min(topLeft.x, bottomLeft.x);
+				maxXVal = Math.max(topRight.x, bottomRight.x);
+				width = maxXVal - minXVal;
+				
+				minYVal = Math.min(topLeft.y, topRight.y);
+				maxYVal = Math.max(bottomLeft.y, bottomRight.y);
+				height = maxYVal - minYVal;
+				
+				target = new Vector<Point>();
+				target.add(new Point(0,0));
+				target.add(new Point(width-1,0));
+				target.add(new Point(0, height-1));
+				target.add(new Point(width-1,height-1));
+				
+				perspectiveTransform = Imgproc.getPerspectiveTransform(Converters.vector_Point2f_to_Mat(corners), Converters.vector_Point2f_to_Mat(target));
+					
+			}
 			
-			double minXVal = Math.min(topLeft.x, bottomLeft.x);
-			double maxXVal = Math.max(topRight.x, bottomRight.x);
-			double width = maxXVal - minXVal;
-			
-			double minYVal = Math.min(topLeft.y, topRight.y);
-			double maxYVal = Math.max(bottomLeft.y, bottomRight.y);
-			double height = maxYVal - minYVal;
-			
-			Vector<Point> target = new Vector<Point>();
-			target.add(new Point(0,0));
-			target.add(new Point(width-1,0));
-			target.add(new Point(0, height-1));
-			target.add(new Point(width-1,height-1));
-			
-			Mat perspectiveTransform = Imgproc.getPerspectiveTransform(Converters.vector_Point2f_to_Mat(corners), Converters.vector_Point2f_to_Mat(target));
 			
 			Imgproc.warpPerspective(matFrame, matFrame, perspectiveTransform, new Size(width, height));
-			
 			/*
 			MatOfByte matOfByteOrig = new MatOfByte();
 			MatOfByte matOfByteDist = new MatOfByte();
@@ -1102,6 +1117,33 @@ public class CamController {
 		//Calib3d.undistort(srcImg, img, cameraMatrix, distCoeffs, newCameraMtx);
 		
 		Calib3d.undistort(srcImg, matFrame, cameraMatrix, distCoeffs);
+		
+	}
+	
+	private Point projectObject(Point point) {
+		double xDiff = Math.abs(point.x - 90);
+		double yDiff = Math.abs(point.y - 60);
+		
+		double fakeRadius = Math.sqrt(xDiff*xDiff + yDiff*yDiff);
+		double cameraAngel = Math.toDegrees(Math.atan((fakeRadius/cameraHeight)));
+		double radiusDiff = Math.toDegrees(Math.tan(cameraAngel)) * 37.4;
+		double realRadius = fakeRadius - radiusDiff;
+		
+		double slope = (point.y - 60)/(point.x - 90);
+		double intersect = 60 - slope * 90;
+		
+		//double circleIntersect = Math.pow((x-90),2) + Math.pow((slope*x+intersect-60), 2) - realRadius*realRadius;
+		
+		double firstEquationPart = slope*slope + 1;
+		double secondEquationPart = 2*slope*(intersect-60)-180;
+		double thirdEquationPart = (intersect-60)*(intersect-60) - realRadius*realRadius + 8100;
+		
+		double circleIntersectionPos = (-secondEquationPart + Math.sqrt(Math.pow(secondEquationPart, 2) - 4*firstEquationPart*thirdEquationPart))/2*firstEquationPart;
+		double circleIntersectionNeg = (-secondEquationPart - Math.sqrt(Math.pow(secondEquationPart, 2) - 4*firstEquationPart*thirdEquationPart))/2*firstEquationPart;
+		
+		System.out.println("First intersection x-coordinate" + circleIntersectionPos);
+		System.out.println("Second intersection x-coordinate" + circleIntersectionNeg);
+		
 		
 	}
 	

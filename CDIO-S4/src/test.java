@@ -5,7 +5,9 @@ public class test {
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 
-		System.out.println(GetDirection(new Point(84.0, 50.0), new Point(75.0,79.0), new Point(64.0, 51.0)));
+		//System.out.println(GetDirection(new Point(84.0, 50.0), new Point(75.0,79.0), new Point(64.0, 51.0)));
+		projectObject(new Point(157,90));
+		
 		
 	}
 	
@@ -34,4 +36,43 @@ public class test {
 	    return angle < 0 ? angle + 2 * Math.PI : angle; //This will make sure angle is [0..2PI]
 	}
 
+	private static void projectObject(Point point) {
+		double xDiff = Math.abs(point.x - 90);
+		double yDiff = Math.abs(point.y - 60);
+		
+		double fakeRadius = Math.sqrt(xDiff*xDiff + yDiff*yDiff);
+		double cameraAngel = Math.toDegrees(Math.atan((fakeRadius/168.8)));
+		
+		/* ERROR STARTS HERE maybe*/
+		
+		double radiusDiff = Math.toDegrees(Math.tan(cameraAngel)) * 37.4;
+		double realRadius = fakeRadius - radiusDiff;
+		
+		double slope = (point.y - 60)/(point.x - 90);
+		double intersect = 60 - slope * 90;
+		
+		//double circleIntersect = Math.pow((x-90),2) + Math.pow((slope*x+intersect-60), 2) - realRadius*realRadius;
+		
+		double firstEquationPart = slope*slope + 1;
+		double secondEquationPart = 2*slope*(intersect-60)-180;
+		double thirdEquationPart = (intersect-60)*(intersect-60) - realRadius*realRadius + 8100;
+		
+		double circleIntersectionPos = (-secondEquationPart + Math.sqrt(Math.pow(secondEquationPart, 2) - 4*firstEquationPart*thirdEquationPart))/2*firstEquationPart;
+		double circleIntersectionNeg = (-secondEquationPart - Math.sqrt(Math.pow(secondEquationPart, 2) - 4*firstEquationPart*thirdEquationPart))/2*firstEquationPart;
+		
+		System.out.println("fakeRadius: " + fakeRadius);
+		System.out.println("Camera Angel: " + cameraAngel);
+		System.out.println("radiusDiff: " + radiusDiff);
+		System.out.println("realRadius: " + realRadius);
+		System.out.println("slope: " + slope);
+		System.out.println("intersect: " + intersect);
+		System.out.println("a: " + firstEquationPart);
+		System.out.println("b: " + secondEquationPart);
+		System.out.println("c " + thirdEquationPart);
+		
+		System.out.println("First intersection x-coordinate: " + circleIntersectionPos);
+		System.out.println("Second intersection x-coordinate: " + circleIntersectionNeg);
+		
+	}
+	
 }
