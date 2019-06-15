@@ -58,6 +58,7 @@ public class CamController {
 	
     private JLabel imgCaptureLabel;
     private JLabel imgDetectionLabel;
+    private JLabel ballDetectionLabel;
 	
     private int[][] map = null;
     
@@ -161,6 +162,8 @@ public class CamController {
 		        framePanel.add(imgCaptureLabel);
 		        imgDetectionLabel = new JLabel(new ImageIcon(img));
 		        framePanel.add(imgDetectionLabel);
+		        ballDetectionLabel = new JLabel(new ImageIcon(img));
+		        framePanel.add(ballDetectionLabel);
 		        videoFrame.getContentPane().add(framePanel, BorderLayout.CENTER);
 				updateFrame();
 				videoFrame.pack();
@@ -348,26 +351,25 @@ public class CamController {
 				Imgproc.line(matFrame, verticesLast[j], verticesLast[(j+1)%4], new Scalar(0,255,0));
 				Imgproc.putText(matFrame, verticesLast[j] + "", verticesLast[j], 2, 0.5, new Scalar(250,250,250));
 			}
+			/*
+			Mat src_mat=new Mat(4,1,CvType.CV_32FC2);
+		    Mat dst_mat=new Mat(4,1,CvType.CV_32FC2);
+
+		    src_mat.put(0, 0, verticesLast[2].x, verticesLast[2].y, verticesLast[3].x, verticesLast[3].y, verticesLast[1].x, verticesLast[1].y, verticesLast[0].x, verticesLast[0].y);
+		    dst_mat.put(0, 0, 0.0, 0.0, rectLast.size.height, 0.0, 0.0, rectLast.size.width, rectLast.size.height, rectLast.size.width);
+		    Mat perspectiveTransform = Imgproc.getPerspectiveTransform(src_mat, dst_mat);
+
+		    Imgproc.warpPerspective(matFrame, matFrame, perspectiveTransform, new Size(rectLast.size.height, rectLast.size.width));
+		    */
 		}
-		
-		Mat src_mat=new Mat(4,1,CvType.CV_32FC2);
-	    Mat dst_mat=new Mat(4,1,CvType.CV_32FC2);
 
-	    src_mat.put(0, 0, verticesLast[2].x, verticesLast[2].y, verticesLast[3].x, verticesLast[3].y, verticesLast[1].x, verticesLast[1].y, verticesLast[0].x, verticesLast[0].y);
-	    dst_mat.put(0, 0, 0.0, 0.0, rectLast.size.height, 0.0, 0.0, rectLast.size.width, rectLast.size.height, rectLast.size.width);
-	    Mat perspectiveTransform = Imgproc.getPerspectiveTransform(src_mat, dst_mat);
-
-	    Imgproc.warpPerspective(matFrame, matFrame, perspectiveTransform, new Size(rectLast.size.height, rectLast.size.width));
-		
-		findBalls(matFrame);
 		findRobot(matFrame);
+		findBalls(matFrame);
 		
 		if(crossI > 0) {
-			//Imgproc.drawContours(matFrame, contoursWalls, crossI, new Scalar(255,0,0), Imgproc.FILLED);
-			
+			Imgproc.drawContours(matFrame, contoursWalls, crossI, new Scalar(255,0,0), Imgproc.FILLED);
+			/*
 			if(crossContour != null) {
-				//TODO: FIX DIS SHIT
-				System.out.println(crossContour);
 				List<Point> pointsContour = crossContour.toList();
 			
 		        Collections.sort(pointsContour, new SortCoordinates());
@@ -394,7 +396,6 @@ public class CamController {
 	            double gridSizeVerticald = matFrame.height()/120;
 		        
 		        for(Point point : pointsContour) {
-		        	/*
 		        	if(topL == null) {
 		        		topL = point;
 		        		bottomL = point;
@@ -427,21 +428,12 @@ public class CamController {
 		        			bottomR = point;
 		        		}
 		        	}
-		        	*/
 		            
 		    		int botX = (int) Math.round(point.x/gridSizeHorizontal);
 		    		int botY = (int) Math.round(point.y/gridSizeVertical);
-		    		map[botX][botY] = 1;
+		    		map[botX][botY] = -1;
 		        }
 		        
-		        for(int i = 0; i < 180; i++) {
-					for(int j = 0; j < 120; j++) {
-						System.out.print(map[i][j]);
-					}
-					System.out.println();
-				}
-
-		        /*
 		        System.out.println(rightL + " " + rightR);
 
 		        Imgproc.circle(matFrame, bottomL, 3, new Scalar(0,255, 0), Imgproc.FILLED);
@@ -455,10 +447,10 @@ public class CamController {
 		        Imgproc.circle(matFrame, topR, 3, new Scalar(0,255, 0), Imgproc.FILLED);
 		        Imgproc.circle(matFrame, rightL, 3, new Scalar(0,255, 0), Imgproc.FILLED);
 		        Imgproc.circle(matFrame, rightR, 3, new Scalar(0,255, 0), Imgproc.FILLED);
-				*/
 		        	
 		        
 			}
+		*/
 		}
 		
 

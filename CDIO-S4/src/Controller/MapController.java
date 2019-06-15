@@ -227,6 +227,9 @@ public class MapController {
 				System.out.println("travel" + (operationNum + 1) + " " + robot.dist(coordinates.get(j)));
 				operationNum += 2;
 			}*/
+			
+			
+			
 
 			int direction = GetDirection(directionVector, coordinates.get(0), robot);
 			if(direction > 0) {
