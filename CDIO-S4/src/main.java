@@ -210,7 +210,7 @@ public class main {
 	};
 
 	public static void main(String[] args) {
-		CamController camController = new CamController(true);
+		CamController camController = new CamController(false);
 		camController.startUp();
 		
 		//new MainController().start();

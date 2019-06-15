@@ -2,19 +2,24 @@ package Controller;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.awt.image.RenderedImage;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Vector;
 
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
@@ -35,6 +40,7 @@ import org.opencv.calib3d.Calib3d;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfByte;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
@@ -45,6 +51,7 @@ import org.opencv.core.Size;
 import org.opencv.highgui.HighGui;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.utils.Converters;
 import org.opencv.videoio.VideoCapture;
 
 import DTO.Ball;
@@ -267,8 +274,10 @@ public class CamController {
 	}
 	
 	private void updateFrame() {
-
-		img = matFrame.clone();
+		undistortImage();
+		warpImage();
+		//warpImage();
+		//img = matFrame.clone();
 		/*
 		Mat dst = new Mat();
 		Mat edges = new Mat();
@@ -343,16 +352,17 @@ public class CamController {
 	    */
 	    mask = createMask();
 		circles = img.clone();
-        findBalls(mask);
+        //findBalls(mask);
         //findRobot(mask);
-
-        for (Ball ball : balls) {
+		findWalls();
+		
+        /*for (Ball ball : balls) {
 			Imgproc.circle(img, new Point(ball.x, ball.y), 20, new Scalar(0, 0, 255));
 			Imgproc.putText(img, "bold", new Point(ball.x, ball.y-20), 3, 1.5, new Scalar(0, 0, 255));
-		}
+		}*/
         
-        Imgproc.putText(img, "Bolde tilbage: " + balls.size(), new Point(circles.width()/3, circles.height()-20), 3, 1, new Scalar(255, 0, 0));
-        
+        //Imgproc.putText(img, "Bolde tilbage: " + balls.size(), new Point(circles.width()/3, circles.height()-20), 3, 1, new Scalar(255, 0, 0));
+         
         imgCaptureLabel.setIcon(new ImageIcon(HighGui.toBufferedImage(img)));
         imgDetectionLabel.setIcon(new ImageIcon(HighGui.toBufferedImage(mask)));
         videoFrame.repaint();
@@ -555,7 +565,7 @@ public class CamController {
 		}
 		
 		//Warp
-		
+		/*
 		Mat src_mat=new Mat(4,1,CvType.CV_32FC2);
 	    Mat dst_mat=new Mat(4,1,CvType.CV_32FC2);
 
@@ -564,7 +574,7 @@ public class CamController {
 	    Mat perspectiveTransform = Imgproc.getPerspectiveTransform(src_mat, dst_mat);
 
 	    Imgproc.warpPerspective(img, img, perspectiveTransform, new Size(rectLast.size.height, rectLast.size.width));
-
+		*/
 	    mask = createMask();
 		circles = img.clone();
         findBalls(mask);
@@ -783,8 +793,10 @@ public class CamController {
             Mat imgCapture = frames.get(frames.size() - 1);
             matFrame = imgCapture;
 
+            
             //Findwalls etc her
             updateFrame();
+            //findWalls();
             
             imgCaptureLabel.setIcon(new ImageIcon(HighGui.toBufferedImage(imgCapture)));
 
@@ -793,6 +805,218 @@ public class CamController {
             videoFrame.repaint();
         }
     }
+	
+	private Point[] findCorners() {
+		Mat dst = new Mat();
+		Mat edges = new Mat();
+		List<MatOfPoint> contoursWalls = new ArrayList<MatOfPoint>();
+		
+		Imgproc.GaussianBlur(img, dst, new Size(3,3), 0);
+		
+		Mat element = Imgproc.getStructuringElement(Imgproc.CV_SHAPE_RECT, new Size(2 * 8 + 1, 2 * 8 + 1), new Point(8, 8));
+		
+		int lowThresh = 90;
+
+		Imgproc.morphologyEx(dst, dst, Imgproc.MORPH_CLOSE, element);
+		Imgproc.Canny(dst, edges, lowThresh, lowThresh*3, 3, true);
+
+		
+		Imgproc.findContours(edges, contoursWalls, new Mat(), Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_NONE);
+
+		
+		double areaLast = 0;
+		Point[] verticesLast = null;
+		RotatedRect rectLast = null;
+		
+		for (int i = 0; i < contoursWalls.size(); i++) {
+			
+			MatOfPoint2f temp = new MatOfPoint2f(contoursWalls.get(i).toArray());
+			MatOfPoint2f approxCurve = new MatOfPoint2f();
+			Imgproc.approxPolyDP(temp, approxCurve, Imgproc.arcLength(temp, true) * 0.02, true);
+			
+			RotatedRect rect = Imgproc.minAreaRect(new MatOfPoint2f(contoursWalls.get(i).toArray()));
+			Point[] vertices = new Point[4];  
+	        rect.points(vertices);
+	        
+			double area = rect.size.width * rect.size.height;
+			
+			if(area > areaLast) {
+	        	verticesLast = vertices;
+		        rectLast = rect;
+				areaLast = area;
+			}
+		}
+		
+		if(verticesLast != null && rectLast != null) {
+			return verticesLast;
+			}
+		System.out.println("Sender ikke nogle hjørner");
+		return null;
+		
+	}
+	
+	private void warpImage() {
+		Point[] verticesLast = findCorners();
+		Point topLeft = new Point(), topRight = new Point(), bottomLeft = new Point(), bottomRight = new Point();
+		for(int i = 0; i < verticesLast.length; i++) {
+			int countX = 0, countY = 0;
+			Point vertex = verticesLast[i];
+			if(vertex.x > verticesLast[(i+1)%4].x) {
+				countX++;
+			}
+			if(vertex.y > verticesLast[(i+1)%4].y) {
+				countY++;
+			}
+			if(vertex.x > verticesLast[(i+2)%4].x) {
+				countX++;
+			}
+			if(vertex.y > verticesLast[(i+2)%4].y) {
+				countY++;
+			}
+			if(vertex.x > verticesLast[(i+3)%4].x) {
+				countX++;
+			}
+			if(vertex.y > verticesLast[(i+3)%4].y) {
+				countY++;
+			}
+			
+			if(countX <= 1 && countY <= 1 ) {
+				topLeft = vertex;
+			} else if(countX >= 2 && countY <= 1) {
+				topRight = vertex;
+			} else if(countX <= 1 && countY >= 2) {
+				bottomLeft = vertex;
+			} else if(countX >= 2 && countY >= 2) {
+				bottomRight = vertex;
+			}
+			
+		}
+
+		Vector<Point> corners = new Vector<Point>();
+		corners.add(topLeft);
+		corners.add(topRight);
+		corners.add(bottomLeft);
+		corners.add(bottomRight);
+		
+		double minXVal = Math.min(topLeft.x, bottomLeft.x);
+		double maxXVal = Math.max(topRight.x, bottomRight.x);
+		double width = maxXVal - minXVal;
+		
+		double minYVal = Math.min(topLeft.y, topRight.y);
+		double maxYVal = Math.max(bottomLeft.y, bottomRight.y);
+		double height = maxYVal - minYVal;
+		
+		Vector<Point> target = new Vector<Point>();
+		target.add(new Point(0,0));
+		target.add(new Point(width-1,0));
+		target.add(new Point(0, height-1));
+		target.add(new Point(width-1,height-1));
+		
+		Mat perspectiveTransform = Imgproc.getPerspectiveTransform(Converters.vector_Point2f_to_Mat(corners), Converters.vector_Point2f_to_Mat(target));
+		
+		Imgproc.warpPerspective(img, img, perspectiveTransform, new Size(width, height));
+		
+		/*
+		MatOfByte matOfByteOrig = new MatOfByte();
+		MatOfByte matOfByteDist = new MatOfByte();
+		
+		Imgcodecs.imencode(".jpg", img, matOfByteOrig);
+		Imgcodecs.imencode(".jpg", newImg, matOfByteDist);
+		
+		byte[] byteArrayOrig = matOfByteOrig.toArray();
+		byte[] byteArrayDist = matOfByteDist.toArray();		
+		
+		BufferedImage bufImageOrig = null;
+		BufferedImage bufImageDist = null;
+
+		try {
+			InputStream inOrig = new ByteArrayInputStream(byteArrayOrig);			
+			bufImageOrig = ImageIO.read(inOrig);
+			
+			InputStream inDist = new ByteArrayInputStream(byteArrayDist);			
+			bufImageDist = ImageIO.read(inDist);
+			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		Image imageOrig = bufImageOrig.getScaledInstance(bufImageOrig.getWidth() / 2, bufImageOrig.getHeight() / 2, Image.SCALE_DEFAULT);
+		Image imageDist = bufImageDist.getScaledInstance(bufImageDist.getWidth() / 2, bufImageDist.getHeight() / 2, Image.SCALE_DEFAULT);
+		
+		
+		JFrame frame = new JFrame();
+		frame.getContentPane().setLayout(new FlowLayout());
+		frame.getContentPane().add(new JLabel(new ImageIcon(imageOrig)));
+		frame.getContentPane().add(new JLabel(new ImageIcon(imageDist)));
+		frame.setPreferredSize(new Dimension(1920, 1080));
+		frame.pack();
+		frame.setVisible(true);
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		*/
+		
+		//Point[] dst_arr = new Point[] {new Point(0,0), new Point(img.size().width,0), new Point(0,img.size().height), new Point(img.size().width, img.size().height)};
+		
+		//Mat dst_mat = dst_arr;
+		
+		
+	   /* Mat dst_mat=new Mat(1,4,CvType.CV_32FC2);
+	    dst_mat.put(0, 0, 3.4);
+	    dst_mat.put(0, 0, 3.4);
+	    dst_mat.put(0, 0, 3.4);
+	    dst_mat.put(0, 0, 3.4);
+	    */
+	    
+		//Mat perspectiveTransform = Imgproc.getPerspectiveTransform(verticesLast, dst_mat);
+		
+		
+		/*
+		Mat src_mat=new Mat(1,4,CvType.CV_32FC2);
+		src_mat.put(0, 0, 3.4);
+		src_mat.put(0, 1, 3.4);
+		src_mat.put(0, 2, 3.4);
+		src_mat.put(0, 3, 3.4);
+		*/
+		
+
+
+	    //src_mat.put(0, 0, verticesLast[2].x, verticesLast[2].y, verticesLast[3].x, verticesLast[3].y, verticesLast[1].x, verticesLast[1].y, verticesLast[0].x, verticesLast[0].y);
+	    //dst_mat.put(0, 0, 0.0, 0.0, rectLast.size.height, 0.0, 0.0, rectLast.size.width, rectLast.size.height, rectLast.size.width);
+	    //Mat perspectiveTransform = Imgproc.getPerspectiveTransform(src_mat, dst_mat);
+
+	    //Imgproc.warpPerspective(img, img, perspectiveTransform, new Size(maxX - minX, maxY - minY));
+		
+		
+		
+	}
+	
+	private void undistortImage() {
+		img = matFrame.clone();
+		Mat srcImg = matFrame.clone();
+		Mat cameraMatrix = new Mat(3,3,CvType.CV_32F);
+		cameraMatrix.put(0, 0, 1372.53986);
+		cameraMatrix.put(0, 1, 0);
+		cameraMatrix.put(0, 2, 1131.69058);
+		cameraMatrix.put(1, 0, 0);
+		cameraMatrix.put(1, 1, 1371.81273);
+		cameraMatrix.put(1, 2, 660.589411);
+		cameraMatrix.put(2, 0, 0);
+		cameraMatrix.put(2, 1, 0);
+		cameraMatrix.put(2, 2, 1);
+		
+		Mat distCoeffs = new Mat(1,5,CvType.CV_32F);
+		distCoeffs.put(0, 0, 0.08984192);
+		distCoeffs.put(0, 1, -0.24672395);
+		distCoeffs.put(0, 2, 0.00120224);
+		distCoeffs.put(0, 3, -0.00039666);
+		distCoeffs.put(0, 4, 0.11864747);
+		
+		//Mat newCameraMtx = Calib3d.getOptimalNewCameraMatrix(cameraMatrix, distCoeffs, new Size(srcImg.width(), srcImg.height()), 1, new Size(srcImg.width(), srcImg.height()));
+		//Calib3d.undistort(srcImg, img, cameraMatrix, distCoeffs, newCameraMtx);
+		
+		Calib3d.undistort(srcImg, img, cameraMatrix, distCoeffs);
+		
+	}
 	
 }
 
