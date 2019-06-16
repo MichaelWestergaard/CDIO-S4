@@ -1120,7 +1120,7 @@ public class CamController {
 		
 	}
 	
-	private Point projectObject(Point point) {
+	private void projectObject(Point point) {
 		double xDiff = Math.abs(point.x - 90);
 		double yDiff = Math.abs(point.y - 60);
 		
