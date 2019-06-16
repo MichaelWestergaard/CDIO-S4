@@ -230,8 +230,8 @@ public class MapController {
 			
 			
 			
-			instructionMap.put("rotate" + operationNum, robot.angleBetween(directionVector, coordinates.get(0)));
-			/*int direction = GetDirection(directionVector, coordinates.get(0), robot);
+			//instructionMap.put("rotate" + operationNum, robot.angleBetween(directionVector, coordinates.get(0)));
+			int direction = GetDirection(directionVector, coordinates.get(0), robot);
 			if(direction > 0) {
 				System.out.println("Roterer til højre");
 				instructionMap.put("rotate" + operationNum, robot.angleBetween(directionVector, coordinates.get(0)));
@@ -248,7 +248,7 @@ public class MapController {
 				double newDirectionY = Math.sin(10.0 * robot.x) + Math.cos(10.0 * robot.y);
 				directionVector.setCoordinates(newDirectionX, newDirectionY);
 				continue;
-			}*/
+			}
 			
 			instructionMap.put("travel" + (operationNum + 1), robot.dist(coordinates.get(0)));
 			System.out.println("travel" + (operationNum + 1) + " " + robot.dist(coordinates.get(0)));
@@ -256,8 +256,6 @@ public class MapController {
 
 			double newDirectionX = Math.cos(robot.angleBetween(directionVector, coordinates.get(0)) * robot.x) - Math.sin(robot.angleBetween(directionVector, coordinates.get(0)) * robot.y);
 			double newDirectionY = Math.sin(robot.angleBetween(directionVector, coordinates.get(0)) * robot.x) + Math.cos(robot.angleBetween(directionVector, coordinates.get(0)) * robot.y);
-
-			
 			
 			//double slope = (closestBallCoordinates[1] - robot.y)/(closestBallCoordinates[0] - robot.x);   
 			//double intersect = robot.y - (slope * robot.x);

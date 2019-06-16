@@ -90,6 +90,7 @@ public class CamController {
     private double minXVal, maxXVal, width, minYVal, maxYVal, height;
     private Mat perspectiveTransform;
     private double cameraHeight = 168.8;
+    int counter = 0 ;
     
     private FrameHelper frameHelper = new FrameHelper();
     
@@ -374,7 +375,7 @@ public class CamController {
 
 		    Imgproc.warpPerspective(matFrame, matFrame, perspectiveTransform, new Size(rectLast.size.height, rectLast.size.width));
 		    */
-			undistortImage();
+			//undistortImage();
 			warpImage(verticesLast);
 		}
 
@@ -483,6 +484,7 @@ public class CamController {
 		if(areaLast > 0 && crossArea > 0) {
 			if(mapController.isReady() && run) {
 				generateMap(realImg);
+				counter++;
 				if(getMap() != null)
 					try {
 						mapController.loadMap(getMap());
@@ -492,6 +494,7 @@ public class CamController {
 					}
 			}
 		}
+		//System.out.println(counter);
 		
 		
         imgCaptureLabel.setIcon(new ImageIcon(HighGui.toBufferedImage(matFrame)));
@@ -615,11 +618,87 @@ public class CamController {
 	        	}
 	        	
 	        	robot = new Robot((top.x+right.x+left.x)/3, (top.y+right.y+left.y)/3);
-	        	
+	        	System.out.println("Robot coord: " + robot.x + " " + robot.y);
+	        	DTO.Point p = null;
+	        	p = projectObject(robot, "robot");
+	        	System.out.println("findRobot new p: " + p.x + " " + p.y);
 	        }
 		}
 		
 	}
+	private static DTO.Point projectObject(DTO.Point point, String objectType) {
+		double pointHeight;
+		
+		DTO.Point returnPoint = new DTO.Point(0,0);
+		
+		if(objectType.equalsIgnoreCase("Robot")) {
+			pointHeight = 37.4;
+		}else {
+			pointHeight = 4;
+		}
+		
+		double xDiff = Math.abs(point.x - 90);
+		double yDiff = Math.abs(point.y - 60);
+		
+		double fakeRadius = Math.sqrt(xDiff*xDiff + yDiff*yDiff);
+		double cameraAngel = Math.atan((fakeRadius/170));
+		//cameraAngel = Math.toDegrees(cameraAngel);
+		/* ERROR STARTS HERE maybe*/
+		
+		double radiusDiff = Math.tan(cameraAngel)*pointHeight;
+		double realRadius = fakeRadius - radiusDiff;
+		
+		double slope = (point.y - 60)/(point.x - 90);
+		double intersect = 60 - slope * 90;
+		
+		//double circleIntersect = Math.pow((x-90),2) + Math.pow((slope*x+intersect-60), 2) - realRadius*realRadius;
+		
+		double firstEquationPart = slope*slope + 1;
+		double secondEquationPart = 2*slope*(intersect-60)-180;
+		double thirdEquationPart = (intersect-60)*(intersect-60) - realRadius*realRadius + 8100;
+		
+		double circleIntersectionPos = (0-secondEquationPart + (Math.sqrt((secondEquationPart * secondEquationPart - 4*firstEquationPart*thirdEquationPart))))/(2*firstEquationPart);
+		double circleIntersectionNeg = (0-secondEquationPart - Math.sqrt(Math.pow(secondEquationPart, 2) - 4*firstEquationPart*thirdEquationPart))/(2*firstEquationPart);
+		/*
+		System.out.println("fakeRadius: " + fakeRadius);
+		System.out.println("Camera Angel: " + cameraAngel);
+		System.out.println("radiusDiff: " + radiusDiff);
+		System.out.println("realRadius: " + realRadius);
+		System.out.println("slope: " + slope);
+		System.out.println("intersect: " + intersect);
+		System.out.println("a: " + firstEquationPart);
+		System.out.println("b: " + secondEquationPart);
+		System.out.println("c " + thirdEquationPart);
+		
+		System.out.println("First intersection x-coordinate: " + circleIntersectionPos);
+		System.out.println("Second intersection x-coordinate: " + circleIntersectionNeg);*/
+		
+		double yForPos = slope * circleIntersectionPos + intersect;
+		double yForNeg = slope * circleIntersectionNeg + intersect;
+		/*
+		System.out.println("y1: " + yForPos);
+		System.out.println("y2: " + yForNeg);*/
+		
+		DTO.Point pPos = new DTO.Point(circleIntersectionPos, yForPos);
+		DTO.Point pNeg = new DTO.Point(circleIntersectionNeg, yForNeg);
+		
+		double distToPPos = point.dist(pPos);
+		double distToPNeg = point.dist(pNeg);
+/*
+		System.out.println("dist pPos: " + distToPPos);
+		System.out.println("dist pNeg: " + distToPNeg);*/
+		
+		if(distToPNeg > distToPPos) {
+			returnPoint.setCoordinates(circleIntersectionPos, yForPos);
+			
+		}else {
+			returnPoint.setCoordinates(circleIntersectionNeg, yForNeg);
+		}
+		System.out.println("Point coordinates: " + returnPoint.x + " " + returnPoint.y);
+		return returnPoint;	
+		
+	}
+
 	
 	class SortCoordinates implements Comparator<Point>{
 
@@ -723,11 +802,21 @@ public class CamController {
 		int botX = (int) Math.round(robot.x/gridSizeHorizontal);
 		int botY = (int) Math.round(robot.y/gridSizeVertical);
 		
+		System.out.println("Old robot: " + botX + " " + botY);
+		DTO.Point testPoint = new DTO.Point(botX, botY);
+		DTO.Point newRobot = new DTO.Point(0,0);
+		DTO.Point newDirection = new DTO.Point(0,0);
+		
+		newRobot = projectObject(testPoint, "robot");
+		System.out.println("newpoint: " + newRobot.x + " " + newRobot.y);
 		int directionX = (int) Math.round(directionPoint.x/gridSizeHorizontal);
 		int directionY = (int) Math.round(directionPoint.y/gridSizeVertical);
+		testPoint = new DTO.Point(directionX, directionY);
+		newDirection = projectObject(testPoint, "robot");
 		
-		map[botX][botY] = 9;
-		map[directionX][directionY] = 3;
+		
+		map[(int) newRobot.x][(int) newRobot.y] = 9;
+		map[(int) newDirection.x][(int) newDirection.y] = 3;
 		
 		for(Ball ball : balls) {
 			int i = (int) Math.round(ball.x/gridSizeHorizontal);
