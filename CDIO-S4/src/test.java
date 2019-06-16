@@ -1,4 +1,12 @@
+import java.util.ArrayList;
+import java.util.List;
+
+import Controller.RouteController;
 import DTO.Point;
+import DTO.Robot;
+import DTO.Ball;
+import DTO.Goal;
+import DTO.Obstacles;
 
 public class test {
 
@@ -6,8 +14,16 @@ public class test {
 		// TODO Auto-generated method stub
 
 		//System.out.println(GetDirection(new Point(84.0, 50.0), new Point(75.0,79.0), new Point(64.0, 51.0)));
-		projectObject(new Point(157,90));
+		//projectObject(new Point(157,90));
 		
+		List<Ball> balls = new ArrayList<Ball>();
+		balls.add(new Ball(8,8));
+		
+		List<Obstacles> obstacles = new ArrayList<Obstacles>();
+		obstacles.add(new Obstacles(10,10));
+		obstacles.add(new Obstacles(9,9));
+		
+		new RouteController().getInstruction(balls, obstacles, new Robot(11,11), new Goal(5,1));
 		
 	}
 	
