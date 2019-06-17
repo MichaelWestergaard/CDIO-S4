@@ -370,9 +370,13 @@ public class MapController {
 				System.out.println("newX: " + newX);
 				System.out.println("newY: " + newY);
 		
-				double xDiff = Math.abs(ballX - robotX);
+				double xDiff = Math.abs(newX - robotX);
 				
-				newX = newX - xDiff;
+				if(retning.equalsIgnoreCase("venstre")) {
+					newX = ballX - xDiff;
+				} else {
+					newX = ballX + xDiff;
+				}
 				
 				newY = slope * newX + intersect;
 				
