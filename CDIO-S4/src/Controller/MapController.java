@@ -239,6 +239,36 @@ public class MapController {
 			double newDirectionY = 0;
 			double[] newDirectionCoordinates = null;
 			
+			instructionMap.put("rotate" + operationNum, robot.angleBetween(directionVector, coordinates.get(0)));
+			
+			if(robot.angleBetween(directionVector, coordinates.get(0)) > 0) {
+				System.out.println("Roterer til højre");
+				System.out.println("rotate" + operationNum + " " + robot.angleBetween(directionVector, coordinates.get(0)));
+				
+				newDirectionCoordinates = rotateDirection("højre");
+				newDirectionX = newDirectionCoordinates[0];
+				newDirectionY = newDirectionCoordinates[1];
+			} else if(robot.angleBetween(directionVector, coordinates.get(0)) < 0) {
+				System.out.println("Roterer til venstre");
+				System.out.println("rotate" + operationNum + " " + robot.angleBetween(directionVector, coordinates.get(0)));
+				
+				newDirectionCoordinates = rotateDirection("venstre");
+				newDirectionX = newDirectionCoordinates[0];
+				newDirectionY = newDirectionCoordinates[1];
+			} else {
+				System.out.println("Roterer 10 grader");
+				instructionMap.put("rotate" + operationNum, 10.0);
+				System.out.println("rotate" + operationNum + " " + robot.angleBetween(directionVector, coordinates.get(0)));
+
+				newDirectionCoordinates = rotateDirection("retry");
+				newDirectionX = newDirectionCoordinates[0];
+				newDirectionY = newDirectionCoordinates[1];
+				
+				directionVector.setCoordinates(newDirectionX, newDirectionY);
+				continue;
+			}
+			
+			/*
 			int direction = GetDirection(directionVector, coordinates.get(0), robot);
 			if(direction > 0) {
 				System.out.println("Roterer til højre");
@@ -269,7 +299,7 @@ public class MapController {
 				directionVector.setCoordinates(newDirectionX, newDirectionY);
 				continue;
 			}
-			
+			*/			
 			
 			instructionMap.put("travel" + (operationNum + 1), robot.dist(coordinates.get(0)));
 			System.out.println("travel" + (operationNum + 1) + " " + robot.dist(coordinates.get(0)));
@@ -320,9 +350,10 @@ public class MapController {
 				
 				double angle = robot.angleBetween(directionVector, coordinates.get(0));
 				
+				/*
 				if(retning.equalsIgnoreCase("venstre")) {
 					angle = 0 - angle;
-				} else if(retning.equalsIgnoreCase("retry")) {
+				} else*/ if(retning.equalsIgnoreCase("retry")) {
 					angle = 10;
 				}
 
