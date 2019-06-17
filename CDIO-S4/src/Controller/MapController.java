@@ -237,7 +237,7 @@ public class MapController {
 			
 			double newDirectionX = 0;
 			double newDirectionY = 0;
-			double[] newDirectionCoordinates = null;
+			Point newDirectionCoordinates = null;
 			
 			instructionMap.put("rotate" + operationNum, robot.angleBetween(directionVector, coordinates.get(0)));
 			
@@ -245,24 +245,24 @@ public class MapController {
 				System.out.println("Roterer til højre");
 				System.out.println("rotate" + operationNum + " " + robot.angleBetween(directionVector, coordinates.get(0)));
 				
-				newDirectionCoordinates = rotateDirection("højre");
-				newDirectionX = newDirectionCoordinates[0];
-				newDirectionY = newDirectionCoordinates[1];
+				newDirectionCoordinates = rotateDirection(coordinates.get(0));
+				newDirectionX = newDirectionCoordinates.x;
+				newDirectionY = newDirectionCoordinates.y;
 			} else if(robot.angleBetween(directionVector, coordinates.get(0)) < 0) {
 				System.out.println("Roterer til venstre");
 				System.out.println("rotate" + operationNum + " " + robot.angleBetween(directionVector, coordinates.get(0)));
 				
-				newDirectionCoordinates = rotateDirection("venstre");
-				newDirectionX = newDirectionCoordinates[0];
-				newDirectionY = newDirectionCoordinates[1];
+				newDirectionCoordinates = rotateDirection(coordinates.get(0));
+				newDirectionX = newDirectionCoordinates.x;
+				newDirectionY = newDirectionCoordinates.y;
 			} else {
 				System.out.println("Roterer 10 grader");
 				instructionMap.put("rotate" + operationNum, 10.0);
 				System.out.println("rotate" + operationNum + " " + robot.angleBetween(directionVector, coordinates.get(0)));
 
-				newDirectionCoordinates = rotateDirection("retry");
-				newDirectionX = newDirectionCoordinates[0];
-				newDirectionY = newDirectionCoordinates[1];
+				newDirectionCoordinates = rotateDirection(coordinates.get(0));
+				newDirectionX = newDirectionCoordinates.x;
+				newDirectionY = newDirectionCoordinates.y;
 				
 				directionVector.setCoordinates(newDirectionX, newDirectionY);
 				continue;
@@ -332,14 +332,71 @@ public class MapController {
 
 	}
 
-	private double[] rotateDirection(String retning) {
+	private Point rotateDirection(Point ballPoint) {		
+		Point returnPoint = new Point(0,0);
+		
+		double xDiff = Math.abs(directionVector.x - robot.x);
+		double yDiff = Math.abs(directionVector.y - robot.y);
+		
+		double realRadius = Math.sqrt(xDiff*xDiff + yDiff*yDiff);
+		
+		double slope = (ballPoint.y - robot.y)/(ballPoint.x - robot.x);
+		double intersect = robot.y - slope * robot.x;
+		
+		//double circleIntersect = Math.pow((x-90),2) + Math.pow((slope*x+intersect-60), 2) - realRadius*realRadius;
+		
+		double firstEquationPart = slope*slope + 1;
+		double secondEquationPart = 2*slope*(intersect-robot.y)-(2 * robot.x);
+		double thirdEquationPart = (intersect-robot.y)*(intersect-robot.y) - realRadius*realRadius + robot.x*robot.x;
+		
+		double circleIntersectionPos = (0-secondEquationPart + (Math.sqrt((secondEquationPart * secondEquationPart - 4*firstEquationPart*thirdEquationPart))))/(2*firstEquationPart);
+		double circleIntersectionNeg = (0-secondEquationPart - Math.sqrt(Math.pow(secondEquationPart, 2) - 4*firstEquationPart*thirdEquationPart))/(2*firstEquationPart);
+		/*
+		System.out.println("fakeRadius: " + fakeRadius);
+		System.out.println("Camera Angel: " + cameraAngel);
+		System.out.println("radiusDiff: " + radiusDiff);
+		System.out.println("realRadius: " + realRadius);
+		System.out.println("slope: " + slope);
+		System.out.println("intersect: " + intersect);
+		System.out.println("a: " + firstEquationPart);
+		System.out.println("b: " + secondEquationPart);
+		System.out.println("c " + thirdEquationPart);
+		
+		System.out.println("First intersection x-coordinate: " + circleIntersectionPos);
+		System.out.println("Second intersection x-coordinate: " + circleIntersectionNeg);*/
+		
+		double yForPos = slope * circleIntersectionPos + intersect;
+		double yForNeg = slope * circleIntersectionNeg + intersect;
+		/*
+		System.out.println("y1: " + yForPos);
+		System.out.println("y2: " + yForNeg);*/
+		
+		Point pPos = new Point(circleIntersectionPos, yForPos);
+		Point pNeg = new Point(circleIntersectionNeg, yForNeg);
+		
+		double distToPPos = ballPoint.dist(pPos);
+		double distToPNeg = ballPoint.dist(pNeg);
+/*
+		System.out.println("dist pPos: " + distToPPos);
+		System.out.println("dist pNeg: " + distToPNeg);*/
+		
+		if(distToPNeg < distToPPos) {
+			returnPoint.setCoordinates(circleIntersectionPos, yForPos);
+			
+		}else {
+			returnPoint.setCoordinates(circleIntersectionNeg, yForNeg);
+		}
+		System.out.println("Point coordinates: " + returnPoint.x + " " + returnPoint.y);
+		return returnPoint;	
+
+		
 				//Gang alle punkternes y-koordinat med -1 for at konvertere
 				//det til et 'normalt' koordinat, så det kan beregnes med funktionen.
 				//Til sidst i funktionen ganges y resultatet med -1 for at konvertere
 				//Det tilbage til det oprindelige format.
 				
 				
-				double directionX = directionVector.x;
+				/*double directionX = directionVector.x;
 				double directionY = directionVector.y * -1;
 				
 				double robotX = robot.x;
@@ -350,10 +407,10 @@ public class MapController {
 				
 				double angle = robot.angleBetween(directionVector, coordinates.get(0));
 				
-				/*
+				
 				if(retning.equalsIgnoreCase("venstre")) {
 					angle = 0 - angle;
-				} else*/ if(retning.equalsIgnoreCase("retry")) {
+				} else if(retning.equalsIgnoreCase("retry")) {
 					angle = 10;
 				}
 
@@ -388,6 +445,7 @@ public class MapController {
 				double[] results = {newX, newY};
 				
 				return results;
+				*/
 	}
 	
 	public int GetDirection(Point direction, Point ball, Point robot)
