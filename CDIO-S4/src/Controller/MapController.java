@@ -245,14 +245,14 @@ public class MapController {
 				System.out.println("Roterer til højre");
 				System.out.println("rotate" + operationNum + " " + robot.angleBetween(directionVector, coordinates.get(0)));
 				
-				newDirectionCoordinates = rotateDirection(coordinates.get(0));
+				newDirectionCoordinates = rotateDirection(coordinates.get(0), true);
 				newDirectionX = newDirectionCoordinates.x;
 				newDirectionY = newDirectionCoordinates.y;
 			} else if(robot.angleBetween(directionVector, coordinates.get(0)) < 0) {
 				System.out.println("Roterer til venstre");
 				System.out.println("rotate" + operationNum + " " + robot.angleBetween(directionVector, coordinates.get(0)));
 				
-				newDirectionCoordinates = rotateDirection(coordinates.get(0));
+				newDirectionCoordinates = rotateDirection(coordinates.get(0), true);
 				newDirectionX = newDirectionCoordinates.x;
 				newDirectionY = newDirectionCoordinates.y;
 			} else {
@@ -260,7 +260,7 @@ public class MapController {
 				instructionMap.put("rotate" + operationNum, 10.0);
 				System.out.println("rotate" + operationNum + " " + robot.angleBetween(directionVector, coordinates.get(0)));
 
-				newDirectionCoordinates = rotateDirection(coordinates.get(0));
+				newDirectionCoordinates = rotateDirection(coordinates.get(0), true);
 				newDirectionX = newDirectionCoordinates.x;
 				newDirectionY = newDirectionCoordinates.y;
 				
@@ -332,7 +332,7 @@ public class MapController {
 
 	}
 
-	private Point rotateDirection(Point ballPoint) {		
+	private Point rotateDirection(Point ballPoint, boolean findLongestDist) {		
 		Point returnPoint = new Point(0,0);
 		
 		double xDiff = Math.abs(directionVector.x - robot.x);
@@ -380,12 +380,22 @@ public class MapController {
 		System.out.println("dist pPos: " + distToPPos);
 		System.out.println("dist pNeg: " + distToPNeg);*/
 		
-		if(distToPNeg < distToPPos) {
-			returnPoint.setCoordinates(circleIntersectionPos, yForPos);
-			
-		}else {
-			returnPoint.setCoordinates(circleIntersectionNeg, yForNeg);
+		if(findLongestDist) {
+			if(distToPNeg < distToPPos) {
+				returnPoint.setCoordinates(circleIntersectionPos, yForPos);
+				
+			}else {
+				returnPoint.setCoordinates(circleIntersectionNeg, yForNeg);
+			}
+		} else {
+			if(distToPNeg > distToPPos) {
+				returnPoint.setCoordinates(circleIntersectionPos, yForPos);
+				
+			}else {
+				returnPoint.setCoordinates(circleIntersectionNeg, yForNeg);
+			}
 		}
+		
 		System.out.println("Point coordinates: " + returnPoint.x + " " + returnPoint.y);
 		return returnPoint;	
 
