@@ -89,7 +89,7 @@ public class CamController {
     private Vector<Point> corners, target;
     private double minXVal, maxXVal, width, minYVal, maxYVal, height;
     private Mat perspectiveTransform;
-    private double cameraHeight = 168.8;
+    private double cameraHeight = 158;
     int counter = 0 ;
     
     private FrameHelper frameHelper = new FrameHelper();
@@ -106,7 +106,7 @@ public class CamController {
 		matFrame = new Mat();
 
 		if(useCam) {
-			videoCapture = new VideoCapture(1);
+			videoCapture = new VideoCapture(0);
 	        if (!videoCapture.isOpened()) {
 	            System.err.println("Cannot open camera");
 	            System.exit(0);
@@ -618,15 +618,15 @@ public class CamController {
 	        	}
 	        	
 	        	robot = new Robot((top.x+right.x+left.x)/3, (top.y+right.y+left.y)/3);
-	        	System.out.println("Robot coord: " + robot.x + " " + robot.y);
+	        	//System.out.println("Robot coord: " + robot.x + " " + robot.y);
 	        	DTO.Point p = null;
 	        	p = projectObject(robot, "robot");
-	        	System.out.println("findRobot new p: " + p.x + " " + p.y);
+	        	//System.out.println("findRobot new p: " + p.x + " " + p.y);
 	        }
 		}
 		
 	}
-	private static DTO.Point projectObject(DTO.Point point, String objectType) {
+	private DTO.Point projectObject(DTO.Point point, String objectType) {
 		double pointHeight;
 		
 		DTO.Point returnPoint = new DTO.Point(0,0);
@@ -641,7 +641,7 @@ public class CamController {
 		double yDiff = Math.abs(point.y - 60);
 		
 		double fakeRadius = Math.sqrt(xDiff*xDiff + yDiff*yDiff);
-		double cameraAngel = Math.atan((fakeRadius/170));
+		double cameraAngel = Math.atan((fakeRadius/cameraHeight));
 		//cameraAngel = Math.toDegrees(cameraAngel);
 		/* ERROR STARTS HERE maybe*/
 		
@@ -1087,28 +1087,32 @@ public class CamController {
 					
 				}
 
-				corners = new Vector<Point>();
-				corners.add(topLeft);
-				corners.add(topRight);
-				corners.add(bottomLeft);
-				corners.add(bottomRight);
-				
-				minXVal = Math.min(topLeft.x, bottomLeft.x);
-				maxXVal = Math.max(topRight.x, bottomRight.x);
-				width = maxXVal - minXVal;
-				
-				minYVal = Math.min(topLeft.y, topRight.y);
-				maxYVal = Math.max(bottomLeft.y, bottomRight.y);
-				height = maxYVal - minYVal;
-				
-				target = new Vector<Point>();
-				target.add(new Point(0,0));
-				target.add(new Point(width-1,0));
-				target.add(new Point(0, height-1));
-				target.add(new Point(width-1,height-1));
-				
-				perspectiveTransform = Imgproc.getPerspectiveTransform(Converters.vector_Point2f_to_Mat(corners), Converters.vector_Point2f_to_Mat(target));
+				if(topLeft != null && topRight != null && bottomLeft != null && bottomRight != null) {
+					corners = new Vector<Point>();
+					corners.add(topLeft);
+					corners.add(topRight);
+					corners.add(bottomLeft);
+					corners.add(bottomRight);
 					
+					minXVal = Math.min(topLeft.x, bottomLeft.x);
+					maxXVal = Math.max(topRight.x, bottomRight.x);
+					width = maxXVal - minXVal;
+					
+					minYVal = Math.min(topLeft.y, topRight.y);
+					maxYVal = Math.max(bottomLeft.y, bottomRight.y);
+					height = maxYVal - minYVal;
+					
+					target = new Vector<Point>();
+					target.add(new Point(0,0));
+					target.add(new Point(width-1,0));
+					target.add(new Point(0, height-1));
+					target.add(new Point(width-1,height-1));
+					
+					perspectiveTransform = Imgproc.getPerspectiveTransform(Converters.vector_Point2f_to_Mat(corners), Converters.vector_Point2f_to_Mat(target));
+						
+				}
+				
+				
 			}
 			
 			

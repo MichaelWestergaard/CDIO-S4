@@ -101,9 +101,9 @@ public class MapController {
 			    //Find flere bolde med kameraet og sæt dem ind i et HashMap
 	    		//De kan ikke have samme key, så de må klades f.eks. travel1, travel2, travel3 osv. og så fjerne disse tal når mappet er blevet sendt.
 
-			    System.out.println(instructionMap);
+			    System.out.println("skal have nyt map, da der er flere bolde tilbage");
 	    		
-	    		mapOutputStream.writeObject(instructionMap);
+	    		//mapOutputStream.writeObject(instructionMap);
 			    mapOutputStream.flush();
 			    
 			    tempClose++;
@@ -162,16 +162,18 @@ public class MapController {
 				}
 
 				if(map[x][y] == 1) {
-					if(map[x+3][y] == 1 && map[x][y+3] == 1 && map[x+3][y+3] == 1) {
+					if(x+3 <= map.length && y+3 <= map[x].length) {
+						if(map[x+3][y] == 1 && map[x][y+3] == 1 && map[x+3][y+3] == 1) {
 
-						ballStatus = true;
+							ballStatus = true;
 
-						map[x][y] = 9;
-						map[x+1][y] = 0;
-						map[x][y+1] = 0;
-						map[x+1][y+1] = 0;
+							map[x][y] = 9;
+							map[x+1][y] = 0;
+							map[x][y+1] = 0;
+							map[x+1][y+1] = 0;
 
-						coordinates.add(new Ball(x,y));
+							coordinates.add(new Ball(x,y));
+						}
 					}
 				}
 
@@ -230,7 +232,10 @@ public class MapController {
 			
 			
 			
-			//instructionMap.put("rotate" + operationNum, robot.angleBetween(directionVector, coordinates.get(0)));
+			instructionMap.put("rotate" + operationNum, robot.angleBetween(directionVector, coordinates.get(0)));
+			System.out.println("rotate" + operationNum + " " + robot.angleBetween(directionVector, coordinates.get(0)));
+			
+			/*
 			int direction = GetDirection(directionVector, coordinates.get(0), robot);
 			if(direction > 0) {
 				System.out.println("Roterer til højre");
@@ -249,6 +254,7 @@ public class MapController {
 				directionVector.setCoordinates(newDirectionX, newDirectionY);
 				continue;
 			}
+			*/
 			
 			instructionMap.put("travel" + (operationNum + 1), robot.dist(coordinates.get(0)));
 			System.out.println("travel" + (operationNum + 1) + " " + robot.dist(coordinates.get(0)));

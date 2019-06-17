@@ -38,7 +38,7 @@ public class FrameHelper extends JFrame {
 		addToMainPanel(minCrossArea, "Min Cross Area");
 		
 		maxCrossArea = new JSpinner();
-		maxCrossArea.setModel(new SpinnerNumberModel(8000, 0, 10000, 100));
+		maxCrossArea.setModel(new SpinnerNumberModel(2000, 0, 10000, 100));
 		addToMainPanel(maxCrossArea, "Max Cross Area");
 		
 		//Walls		
