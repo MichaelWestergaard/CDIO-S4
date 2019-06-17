@@ -370,8 +370,17 @@ public class MapController {
 				System.out.println("newX: " + newX);
 				System.out.println("newY: " + newY);
 		
-				newY *= -1;
+				double xDiff = Math.abs(ballX - robotX);
 				
+				newX = newX - xDiff;
+				
+				newY = slope * newX + intersect;
+				
+				newY *= -1;
+
+				System.out.println("Final x: " + newX);
+				System.out.println("Final y: " + newY);
+
 				double[] results = {newX, newY};
 				
 				return results;
