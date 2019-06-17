@@ -20,7 +20,7 @@ public class RouteController {
 	
 	int operationNum = 0;
 	Map<String, Double> instructions;
-	List<Obstacles> obstacles;
+	Obstacles obstacle;
 	Goal goal;
 	Robot robot;
 	
@@ -34,13 +34,13 @@ public class RouteController {
 	boolean routeFound = false;
 	boolean alternativeRouteFound = false;
 
-	public Map<String, Double> getInstruction(List<Ball> balls, List<Obstacles> obstacles, Robot robot, Goal goal){
+	public Map<String, Double> getInstruction(List<Ball> balls, Obstacles obstacle, Robot robot, Goal goal){
 		
 		instructions = new HashMap<String, Double>();
-		this.obstacles = obstacles;
+		this.obstacle = obstacle;
 		this.goal = goal;
 		this.robot = robot;
-		robot.setDirectionVector(new Direction(19,19));
+		robot.setDirectionVector(new Direction(4,4));
 		
 		Collections.sort(balls, new Sort());
 				
@@ -65,20 +65,16 @@ public class RouteController {
 	
 	private boolean getRoute(Ball ball) {
 		routeFound = true;
+		boolean crossBlocking = false;
 		
 		System.out.println(ball);
 		System.out.println(robot);
 		
-		List<Obstacles> obstaclesBlocking = new ArrayList<Obstacles>();
-		
-		for (Obstacles obstacle : obstacles) {
-			if(inLine(ball, robot, obstacle)) {
-				obstaclesBlocking.add(obstacle);
-				System.out.println(obstacle);
-			}
+		if(inLine(ball, robot, obstacle)) {
+			crossBlocking = true;
 		}
 		
-		if(obstaclesBlocking.isEmpty()) {
+		if(!crossBlocking && !obstacle.isInside(ball)) {
 			addInstruction("rotate", getRotationValue(ball));
 			if(routeFound) {
 				addInstruction("travel", robot.dist(ball));
@@ -88,85 +84,58 @@ public class RouteController {
 				return false;
 			}
 		} else {
-			getAlternativeRoute(ball);
+			//getAlternativeRoute(ball);
+			//Find circle
+			System.out.println(newDirectionOnCircle(ball));
 			return true;
 		}
 	}
 	
-	private void getAlternativeRoute(Ball ball) {
-		List<Point> path = new ArrayList<>();
-		xSize = (int) (ball.x >= robot.x ? ball.x : robot.x);
-		ySize = (int) (ball.y >= robot.y ? ball.y : robot.y);
+	private Point newDirectionOnCircle(Point ballPoint) {
+		Point returnPoint = new Point(0,0);
+
+		double xDiff = Math.abs(robot.getDirectionVector().x - robot.x);
+		double yDiff = Math.abs(robot.getDirectionVector().y - robot.y);
+
+		double realRadius = Math.sqrt(xDiff*xDiff + yDiff*yDiff);
+
+		double slope = (ballPoint.y - robot.y)/(ballPoint.x - robot.x);
+		double intersect = robot.y - slope * robot.x;
+
+		double firstEquationPart = slope*slope + 1;
+		double secondEquationPart = 2*slope*(intersect-robot.y)-(2 * robot.x);
+		double thirdEquationPart = (intersect-robot.y)*(intersect-robot.y) - realRadius*realRadius + robot.x*robot.x;
+
+		double circleIntersectionPos = (0-secondEquationPart + (Math.sqrt((secondEquationPart * secondEquationPart - 4*firstEquationPart*thirdEquationPart))))/(2*firstEquationPart);
+		double circleIntersectionNeg = (0-secondEquationPart - Math.sqrt(Math.pow(secondEquationPart, 2) - 4*firstEquationPart*thirdEquationPart))/(2*firstEquationPart);
+
+
+		System.out.println("slope: " + slope);
+		System.out.println("intersect: " + intersect);
+		System.out.println("a: " + firstEquationPart);
+		System.out.println("b: " + secondEquationPart);
+		System.out.println("c " + thirdEquationPart);
 		
-		if(checkPath((int)robot.x, (int)robot.y, ball, path)) {
-			// Found an alternative path
-			//TODO: Find den hurtigste vej ud fra path og lav instructions
-			for (Point point : path) {
-				System.out.println(point.x + ", " + point.y);
-			}
+		System.out.println("First intersection x-coordinate: " + circleIntersectionPos);
+		System.out.println("Second intersection x-coordinate: " + circleIntersectionNeg);
+
+		double yForPos = slope * circleIntersectionPos + intersect;
+		double yForNeg = slope * circleIntersectionNeg + intersect;
+
+		Point pPos = new Point(circleIntersectionPos, yForPos);
+		Point pNeg = new Point(circleIntersectionNeg, yForNeg);
+
+		double distToPPos = ballPoint.dist(pPos);
+		double distToPNeg = ballPoint.dist(pNeg);
+
+		if(distToPNeg < distToPPos) {
+			returnPoint.setCoordinates(circleIntersectionPos, yForPos);
+
+		}else {
+			returnPoint.setCoordinates(circleIntersectionNeg, yForNeg);
 		}
-		
-		for (Point point : path) {
-			System.out.println(point.x + ", " + point.y);
-		}
-	}
-	
-	private boolean isValidCoordinate(int x, int y) {
-		
-		// Går ud over banen
-		if(x-1 < 0 || y-1 < 0) {
-			System.out.println("Går ud over banen");
-			return false;
-		}
-		
-		
-		// Tjek om koordinat går ind i forhindring
-		for(Obstacles obstacle : obstacles) {
-			if((obstacle.x == x && obstacle.y == y) || (obstacle.x+1 == x || obstacle.x-1 == x || obstacle.y+1 == y || obstacle.y-1 == y)) {
-				System.out.println("Rammer forhindring");
-				return false;
-			}
-		}
-		
-		return true;
-	}
-	
-	private boolean checkPath(int x, int y, Ball ball, List<Point> path) {
-		
-		if(alternativeRouteFound)
-			return true;
-		
-		// If coordinate is out of map
-		if(!isValidCoordinate(x, y)) {
-			System.out.println(x +  ", " + y);
-			System.out.println("Invalid coordinate");
-			return false;
-		}
-				
-		// If coordinate have been visisted
-		for(Point visitedPoint : visitedCoordinates) {
-			if(visitedPoint.x == x && visitedPoint.y == y) {
-				return false;
-			}
-		}
-		
-		Point point = new Point(x,y);
-		
-		path.add(point);
-		visitedCoordinates.add(point);
-		
-		if(ball.x == x && ball.y == y) {
-			alternativeRouteFound = true;
-			return true;
-		}
-		
-		for(int[] direction : directions) {
-			if(checkPath(x+direction[0], y+direction[1], ball, path))
-				return true;
-		}
-		
-		path.remove(path.size() - 1);
-		return false;
+		System.out.println("Point coordinates: " + returnPoint.x + " " + returnPoint.y);
+		return returnPoint;
 	}
 	
 	private void addInstruction(String operation, double value) {

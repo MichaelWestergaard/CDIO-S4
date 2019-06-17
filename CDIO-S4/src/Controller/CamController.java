@@ -56,6 +56,8 @@ import org.opencv.videoio.VideoCapture;
 
 import DTO.Ball;
 import DTO.Camera;
+import DTO.Goal;
+import DTO.Obstacles;
 import DTO.Robot;
 
 public class CamController {
@@ -95,7 +97,7 @@ public class CamController {
     
     private FrameHelper frameHelper = new FrameHelper();
     
-    String imagePath = "Images/findRoboto.jpg";
+    String imagePath = "Images/crossFindBalls1.jpg";
     
     DTO.Point directionPoint;
     Robot robot;
@@ -408,7 +410,12 @@ public class CamController {
 				}
 	        }
 	        
-			Imgproc.circle(matFrame, center, (int) ((diameter/2) + robot.dist(directionPoint)/2), new Scalar(255,255,255));
+	        Obstacles obstacle = new Obstacles(center.x, center.y);
+	        obstacle.setDiameter((diameter/2) + robot.dist(directionPoint)/2);
+	        
+			new RouteController().getInstruction(balls, new Obstacles(2,2), new Robot(5,5), new Goal(5,1));
+	        
+			Imgproc.circle(matFrame, center, (int) obstacle.getDiameter(), new Scalar(255,255,255));
 			
 			
 			//Imgproc.drawContours(matFrame, contoursWalls, crossI, new Scalar(255,0,0), Imgproc.FILLED);
