@@ -316,7 +316,7 @@ public class MapController {
 				double robotY = robot.y * -1;
 				
 				double ballX = coordinates.get(0).x;
-				double ballY = coordinates.get(0).y;
+				double ballY = coordinates.get(0).y * -1;
 				
 				double angle = robot.angleBetween(directionVector, coordinates.get(0));
 				
