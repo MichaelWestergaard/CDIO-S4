@@ -17,13 +17,16 @@ public class test {
 		//projectObject(new Point(157,90));
 		
 		List<Ball> balls = new ArrayList<Ball>();
-		balls.add(new Ball(8,8));
+		balls.add(new Ball(1,1));
 		
 		List<Obstacles> obstacles = new ArrayList<Obstacles>();
-		obstacles.add(new Obstacles(10,10));
-		obstacles.add(new Obstacles(9,9));
+		obstacles.add(new Obstacles(2,2));
+		obstacles.add(new Obstacles(2,-1));
+		obstacles.add(new Obstacles(3,-2));
+		obstacles.add(new Obstacles(2,-3));
+		obstacles.add(new Obstacles(1,-2));
 		
-		new RouteController().getInstruction(balls, obstacles, new Robot(11,11), new Goal(5,1));
+		new RouteController().getInstruction(balls, obstacles, new Robot(5,5), new Goal(5,1));
 		
 	}
 	

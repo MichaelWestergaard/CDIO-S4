@@ -91,6 +91,7 @@ public class CamController {
     private Mat perspectiveTransform;
     private double cameraHeight = 168.8;
     int counter = 0 ;
+    double distRobot = 0.0;
     
     private FrameHelper frameHelper = new FrameHelper();
     
@@ -106,7 +107,7 @@ public class CamController {
 		matFrame = new Mat();
 
 		if(useCam) {
-			videoCapture = new VideoCapture(1);
+			videoCapture = new VideoCapture(0);
 	        if (!videoCapture.isOpened()) {
 	            System.err.println("Cannot open camera");
 	            System.exit(0);
@@ -376,7 +377,7 @@ public class CamController {
 		    Imgproc.warpPerspective(matFrame, matFrame, perspectiveTransform, new Size(rectLast.size.height, rectLast.size.width));
 		    */
 			//undistortImage();
-			warpImage(verticesLast);
+			//warpImage(verticesLast);
 		}
 
 		//undistortImage();
@@ -386,7 +387,31 @@ public class CamController {
 		findBalls(matFrame);
 		
 		if(crossI > 0) {
-			Imgproc.drawContours(matFrame, contoursWalls, crossI, new Scalar(255,0,0), Imgproc.FILLED);
+			float[] radius = new float[1];
+			Point center = new Point();
+			Imgproc.minEnclosingCircle(new MatOfPoint2f(contoursWalls.get(crossI).toArray()), center, radius);
+
+			RotatedRect rect = Imgproc.minAreaRect(new MatOfPoint2f(contoursWalls.get(crossI).toArray()));
+			Point[] vertices = new Point[4];  
+	        rect.points(vertices);
+			
+	        double diameter = 0.0;
+	        
+	        if(vertices != null) {
+				for(int i = 0; i < 4; i++) {
+					for(int j = 0; j < 4; j++) {
+						double dist = Math.abs(Math.sqrt(Math.pow(vertices[j].x - vertices[i].x, 2) + Math.pow(vertices[j].y - vertices[i].y, 2)));
+						
+						if(dist > diameter)
+							diameter = dist;
+					}
+				}
+	        }
+	        
+			Imgproc.circle(matFrame, center, (int) ((diameter/2) + robot.dist(directionPoint)/2), new Scalar(255,255,255));
+			
+			
+			//Imgproc.drawContours(matFrame, contoursWalls, crossI, new Scalar(255,0,0), Imgproc.FILLED);
 			/*
 			if(crossContour != null) {
 				List<Point> pointsContour = crossContour.toList();
@@ -503,6 +528,8 @@ public class CamController {
         if(firstFrame)
         	videoFrame.repaint();
 	}
+	
+	
 	
 	private void findRobot(Mat matFrame) {
 		Mat matFrameCopy = matFrame.clone();

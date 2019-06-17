@@ -105,6 +105,30 @@ public class RouteController {
 				System.out.println(point.x + ", " + point.y);
 			}
 		}
+		
+		for (Point point : path) {
+			System.out.println(point.x + ", " + point.y);
+		}
+	}
+	
+	private boolean isValidCoordinate(int x, int y) {
+		
+		// Går ud over banen
+		if(x-1 < 0 || y-1 < 0) {
+			System.out.println("Går ud over banen");
+			return false;
+		}
+		
+		
+		// Tjek om koordinat går ind i forhindring
+		for(Obstacles obstacle : obstacles) {
+			if((obstacle.x == x && obstacle.y == y) || (obstacle.x+1 == x || obstacle.x-1 == x || obstacle.y+1 == y || obstacle.y-1 == y)) {
+				System.out.println("Rammer forhindring");
+				return false;
+			}
+		}
+		
+		return true;
 	}
 	
 	private boolean checkPath(int x, int y, Ball ball, List<Point> path) {
@@ -113,19 +137,15 @@ public class RouteController {
 			return true;
 		
 		// If coordinate is out of map
-		if(x > xSize || y > ySize || x < 0 || y < 0)
+		if(!isValidCoordinate(x, y)) {
+			System.out.println(x +  ", " + y);
+			System.out.println("Invalid coordinate");
 			return false;
-		
+		}
+				
 		// If coordinate have been visisted
 		for(Point visitedPoint : visitedCoordinates) {
 			if(visitedPoint.x == x && visitedPoint.y == y) {
-				return false;
-			}
-		}
-		
-		// If coordinate is obstacle
-		for (Obstacles obstacle : obstacles) {
-			if(obstacle.x == x && obstacle.y == y) {
 				return false;
 			}
 		}
@@ -139,7 +159,6 @@ public class RouteController {
 			alternativeRouteFound = true;
 			return true;
 		}
-		
 		
 		for(int[] direction : directions) {
 			if(checkPath(x+direction[0], y+direction[1], ball, path))
@@ -176,16 +195,6 @@ public class RouteController {
 	}
 	
 	private boolean inLine(Point a, Point b, Point c) {
-		/*
-		if(a.x == c.x)
-			return b.x == c.x;
-		
-		if(a.y == c.y)
-			return b.y == c.y;
-		
-		return (a.x - c.x)*(a.y-c.y) == (c.x - b.x)*(c.y-b.y);
-		*/
-
 		return (a.x * (b.y - c.y) + b.x * (c.y - a.y) + c.x * (a.y - b.y) == 0) ? true : false;
 	}
 	
