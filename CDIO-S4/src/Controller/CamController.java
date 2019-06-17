@@ -56,6 +56,7 @@ import org.opencv.videoio.VideoCapture;
 
 import DTO.Ball;
 import DTO.Camera;
+import DTO.Direction;
 import DTO.Goal;
 import DTO.Obstacles;
 import DTO.Robot;
@@ -388,6 +389,13 @@ public class CamController {
 		findRobot(matFrame);
 		findBalls(matFrame);
 		
+		if(robot != null && directionPoint != null) {
+			mapController.robot = robot;
+			Imgproc.circle(matFrame, new Point(robot.x, robot.y), 2, new Scalar(0,0,255), Imgproc.FILLED);
+
+			Imgproc.line(matFrame, new Point(robot.x, robot.y), new Point(directionPoint.x, directionPoint.y), new Scalar(0,0,255));
+		}
+		
 		if(crossI > 0) {
 			float[] radius = new float[1];
 			Point center = new Point();
@@ -409,109 +417,16 @@ public class CamController {
 					}
 				}
 	        }
-	        
 	        Obstacles obstacle = new Obstacles(center.x, center.y);
 	        obstacle.setDiameter((diameter/2) + robot.dist(directionPoint)/2);
 	        
-			new RouteController().getInstruction(balls, new Obstacles(2,2), new Robot(5,5), new Goal(5,1));
+	        System.out.println("Getting instructions");
 	        
-			Imgproc.circle(matFrame, center, (int) obstacle.getDiameter(), new Scalar(255,255,255));
-			
-			
-			//Imgproc.drawContours(matFrame, contoursWalls, crossI, new Scalar(255,0,0), Imgproc.FILLED);
-			/*
-			if(crossContour != null) {
-				List<Point> pointsContour = crossContour.toList();
-			
-		        Collections.sort(pointsContour, new SortCoordinates());
-		        
-		        List<Point> cross = new ArrayList<Point>();
-		        
-		        Point topL = null, bottomL = null, leftL = null, rightL = null;
-
-		        Point topR = null, bottomR = null, leftR = null, rightR = null;
-		        
-		        double gridSizeHorizontal = matFrame.width()/180;
-		        double gridSizeVertical = matFrame.height()/120;
-		        
-		        map = new int[180][120];
-		        
-		        for (int i = 0; i < 180; i++) {
-					for (int j = 0; j < 120; j++) {
-						map[i][j] = 0;
-					}
-				}
-		        
-
-	        	double gridSizeHorizontald = matFrame.width()/180;
-	            double gridSizeVerticald = matFrame.height()/120;
-		        
-		        for(Point point : pointsContour) {
-		        	if(topL == null) {
-		        		topL = point;
-		        		bottomL = point;
-		        		leftL = point;
-		        		rightL = point;
-		        		topR = point;
-		        		bottomR = point;
-		        		leftR = point;
-		        		rightR = point;
-		        	} else {
-		        		if(leftL.x > point.x) {
-		        			leftL = point;
-		        		}
-		        		
-		        		if(rightL.x < point.x) {
-		        			rightL = point;
-		        		} else if(rightR.x < point.x || point.y > rightL.y) {
-		        			rightR = point;
-		        		}
-		        		
-		        		if(point.y < topL.y) {
-		        			topL = point;
-		        		} else if(point.y <= topR.y || (point.x > topL.x && point.y <= topL.y)) {
-		        			topR = point;
-		        		}
-		        		
-		        		if(point.y >= bottomL.y && point.x >= bottomL.x) {
-		        			bottomL = point;
-		        		} else if(point.y >= bottomR.y && point.x < bottomL.x) {
-		        			bottomR = point;
-		        		}
-		        	}
-		            
-		    		int botX = (int) Math.round(point.x/gridSizeHorizontal);
-		    		int botY = (int) Math.round(point.y/gridSizeVertical);
-		    		map[botX][botY] = -1;
-		        }
-		        
-		        System.out.println(rightL + " " + rightR);
-
-		        Imgproc.circle(matFrame, bottomL, 3, new Scalar(0,255, 0), Imgproc.FILLED);
-		        Imgproc.circle(matFrame, bottomR, 3, new Scalar(0,255, 0), Imgproc.FILLED);
-		        
-		        Imgproc.circle(matFrame, leftL, 3, new Scalar(0,255, 0), Imgproc.FILLED);
-
-		        Imgproc.circle(matFrame, leftR, 3, new Scalar(0,255, 0), Imgproc.FILLED);
-		        
-		        Imgproc.circle(matFrame, topL, 3, new Scalar(0,255, 0), Imgproc.FILLED);
-		        Imgproc.circle(matFrame, topR, 3, new Scalar(0,255, 0), Imgproc.FILLED);
-		        Imgproc.circle(matFrame, rightL, 3, new Scalar(0,255, 0), Imgproc.FILLED);
-		        Imgproc.circle(matFrame, rightR, 3, new Scalar(0,255, 0), Imgproc.FILLED);
-		        	
-		        
-			}
-		*/
+	        robot.setDirectionVector(new Direction(directionPoint.x, directionPoint.y));
+			new RouteController().getInstruction(balls, obstacle, robot, new Goal(5,1));
+	        
+			Imgproc.circle(matFrame, center, (int) obstacle.getDiameter(), new Scalar(255,255,255));			
 		}
-		
-
-		if(robot != null && directionPoint != null) {
-			mapController.robot = robot;
-			Imgproc.circle(matFrame, new Point(robot.x, robot.y), 2, new Scalar(0,0,255), Imgproc.FILLED);
-
-			Imgproc.line(matFrame, new Point(robot.x, robot.y), new Point(directionPoint.x, directionPoint.y), new Scalar(0,0,255));
-		}
-		
 		
 		if(areaLast > 0 && crossArea > 0) {
 			if(mapController.isReady() && run) {

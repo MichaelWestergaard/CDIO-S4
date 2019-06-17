@@ -40,7 +40,6 @@ public class RouteController {
 		this.obstacle = obstacle;
 		this.goal = goal;
 		this.robot = robot;
-		robot.setDirectionVector(new Direction(4,4));
 		
 		Collections.sort(balls, new Sort());
 				
@@ -51,10 +50,11 @@ public class RouteController {
 			Collections.sort(balls, new Sort());
 			
 			Ball ball = balls.get(i);
-			
+			System.out.println(robot);
 			if(getRoute(ball)) {
 				balls.remove(ball);
-				i++;
+				iterator = balls.size();
+				//i++;
 			} else {
 				System.out.println("try again");
 			}
@@ -64,78 +64,52 @@ public class RouteController {
 	}
 	
 	private boolean getRoute(Ball ball) {
-		routeFound = true;
 		boolean crossBlocking = false;
-		
-		System.out.println(ball);
-		System.out.println(robot);
-		
-		if(inLine(ball, robot, obstacle)) {
+
+		List<Point> intersectionPoints = obstacle.getCircleLineIntersectionPoint(robot, ball);
+
+		if(!intersectionPoints.isEmpty()) {
 			crossBlocking = true;
 		}
 		
-		if(!crossBlocking && !obstacle.isInside(ball)) {
-			addInstruction("rotate", getRotationValue(ball));
-			if(routeFound) {
-				addInstruction("travel", robot.dist(ball));
-				robot.setCoordinates(ball.x, ball.y);
-				return true;
-			} else {
-				return false;
-			}
+		if(!crossBlocking) {
+			addInstruction("rotate", robot.angleBetween(robot.getDirectionVector(), ball));
+			addInstruction("travel", robot.dist(ball));
+			
+			Point newDirectionCoordinates = rotateDirection(ball, true);
+
+			// Set new robot coordinates and new direction
+			robot.setCoordinates(ball.x, ball.y);
+			robot.getDirectionVector().setCoordinates(newDirectionCoordinates.x, newDirectionCoordinates.y);
+			return true;
 		} else {
-			//getAlternativeRoute(ball);
-			//Find circle
-			System.out.println(newDirectionOnCircle(ball));
+			System.out.println("Direct way is blocked, need to find an alternative route");			
+
+			if(obstacle.isInside(ball)) {
+				System.out.println("ball is inside circle");
+				
+				Point closestIntersectionPoint = null;
+				
+				double minDist = Integer.MAX_VALUE;
+				
+				for (Point point : intersectionPoints) {
+					double tempDist = point.dist(ball);
+					if(tempDist < minDist) {
+						closestIntersectionPoint = point;
+						minDist = tempDist;
+					}
+				}
+				
+				System.out.println("Need to go to " + closestIntersectionPoint.x + ", " + closestIntersectionPoint.y + " and then rotate and travel to " + ball);
+				
+			} else {
+				System.out.println("ball is outside circle");
+
+				System.out.println("Need to go to " + ball);
+				// Kør hen til uden for cirklen () rotate -> travel -> rotate travel indtil du har bolden.
+			}
 			return true;
 		}
-	}
-	
-	private Point newDirectionOnCircle(Point ballPoint) {
-		Point returnPoint = new Point(0,0);
-
-		double xDiff = Math.abs(robot.getDirectionVector().x - robot.x);
-		double yDiff = Math.abs(robot.getDirectionVector().y - robot.y);
-
-		double realRadius = Math.sqrt(xDiff*xDiff + yDiff*yDiff);
-
-		double slope = (ballPoint.y - robot.y)/(ballPoint.x - robot.x);
-		double intersect = robot.y - slope * robot.x;
-
-		double firstEquationPart = slope*slope + 1;
-		double secondEquationPart = 2*slope*(intersect-robot.y)-(2 * robot.x);
-		double thirdEquationPart = (intersect-robot.y)*(intersect-robot.y) - realRadius*realRadius + robot.x*robot.x;
-
-		double circleIntersectionPos = (0-secondEquationPart + (Math.sqrt((secondEquationPart * secondEquationPart - 4*firstEquationPart*thirdEquationPart))))/(2*firstEquationPart);
-		double circleIntersectionNeg = (0-secondEquationPart - Math.sqrt(Math.pow(secondEquationPart, 2) - 4*firstEquationPart*thirdEquationPart))/(2*firstEquationPart);
-
-
-		System.out.println("slope: " + slope);
-		System.out.println("intersect: " + intersect);
-		System.out.println("a: " + firstEquationPart);
-		System.out.println("b: " + secondEquationPart);
-		System.out.println("c " + thirdEquationPart);
-		
-		System.out.println("First intersection x-coordinate: " + circleIntersectionPos);
-		System.out.println("Second intersection x-coordinate: " + circleIntersectionNeg);
-
-		double yForPos = slope * circleIntersectionPos + intersect;
-		double yForNeg = slope * circleIntersectionNeg + intersect;
-
-		Point pPos = new Point(circleIntersectionPos, yForPos);
-		Point pNeg = new Point(circleIntersectionNeg, yForNeg);
-
-		double distToPPos = ballPoint.dist(pPos);
-		double distToPNeg = ballPoint.dist(pNeg);
-
-		if(distToPNeg < distToPPos) {
-			returnPoint.setCoordinates(circleIntersectionPos, yForPos);
-
-		}else {
-			returnPoint.setCoordinates(circleIntersectionNeg, yForNeg);
-		}
-		System.out.println("Point coordinates: " + returnPoint.x + " " + returnPoint.y);
-		return returnPoint;
 	}
 	
 	private void addInstruction(String operation, double value) {
@@ -143,57 +117,54 @@ public class RouteController {
 		operationNum++;
 	}
 	
-	private double getRotationValue(Ball ball) {
-		double rotateDegrees = 0;
-		int direction = getDirection(robot.getDirectionVector(), ball, robot);
+	private Point rotateDirection(Point ballPoint, boolean findLongestDist) {		
+		Point returnPoint = new Point(0,0);
 		
-		if(direction > 0) {
-			rotateDegrees = robot.angleBetween(robot.getDirectionVector(), ball);
-		} else if(direction < 0) {
-			rotateDegrees = 0-robot.angleBetween(robot.getDirectionVector(), ball);
+		double xDiff = Math.abs(robot.getDirectionVector().x - robot.x);
+		double yDiff = Math.abs(robot.getDirectionVector().y - robot.y);
+		
+		double realRadius = Math.sqrt(xDiff*xDiff + yDiff*yDiff);
+		
+		double slope = (ballPoint.y - robot.y)/(ballPoint.x - robot.x);
+		double intersect = robot.y - slope * robot.x;
+		
+		double firstEquationPart = slope*slope + 1;
+		double secondEquationPart = 2*slope*(intersect-robot.y)-(2 * robot.x);
+		double thirdEquationPart = (intersect-robot.y)*(intersect-robot.y) - realRadius*realRadius + robot.x*robot.x;
+		
+		double circleIntersectionPos = (0-secondEquationPart + (Math.sqrt((secondEquationPart * secondEquationPart - 4*firstEquationPart*thirdEquationPart))))/(2*firstEquationPart);
+		double circleIntersectionNeg = (0-secondEquationPart - Math.sqrt(Math.pow(secondEquationPart, 2) - 4*firstEquationPart*thirdEquationPart))/(2*firstEquationPart);
+		
+		double yForPos = slope * circleIntersectionPos + intersect;
+		double yForNeg = slope * circleIntersectionNeg + intersect;
+		
+		Point pPos = new Point(circleIntersectionPos, yForPos);
+		Point pNeg = new Point(circleIntersectionNeg, yForNeg);
+		
+		double distToPPos = ballPoint.dist(pPos);
+		double distToPNeg = ballPoint.dist(pNeg);
+		
+		if(findLongestDist) {
+			if(distToPNeg < distToPPos) {
+				returnPoint.setCoordinates(circleIntersectionPos, yForPos);
+				
+			}else {
+				returnPoint.setCoordinates(circleIntersectionNeg, yForNeg);
+			}
 		} else {
-			rotateDegrees = 10.0;
-			//TODO: Indsæt Tims nye metode til at bestemme retningsvektor
-			double newDirectionX = Math.cos(10.0 * robot.x) - Math.sin(10.0 * robot.y);
-			double newDirectionY = Math.sin(10.0 * robot.x) + Math.cos(10.0 * robot.y);
-			robot.getDirectionVector().setCoordinates(newDirectionX, newDirectionY);
-			routeFound = false;
+			if(distToPNeg > distToPPos) {
+				returnPoint.setCoordinates(circleIntersectionPos, yForPos);
+				
+			}else {
+				returnPoint.setCoordinates(circleIntersectionNeg, yForNeg);
+			}
 		}
 		
-		return rotateDegrees;
+		return returnPoint;
 	}
 	
 	private boolean inLine(Point a, Point b, Point c) {
 		return (a.x * (b.y - c.y) + b.x * (c.y - a.y) + c.x * (a.y - b.y) == 0) ? true : false;
-	}
-	
-	public int getDirection(Point direction, Point ball, Point robot)
-	{
-		direction.y *= -1;
-		ball.y *= -1;
-		robot.y *= -1;
-		
-	    double theta1 = getAngle(direction, ball); 
-	    double theta2 = getAngle(ball, robot);
-	    double delta = normalizeAngle(theta2 - theta1);
-
-	    if ( delta == 0 || delta == Math.PI) {
-	    	return 0;
-	    }
-	    else if ( delta < Math.PI )
-	        return -1;
-	    else return 1;
-	}
-
-	private Double getAngle(Point p1, Point p2)
-	{
-	    Double angleFromXAxis = Math.atan((p2.y - p1.y ) / (p2.x - p1.x ) ); // where y = m * x + K
-	    return  p2.x - p1.x < 0 ? angleFromXAxis + Math.PI : angleFromXAxis; // The will go to the correct Quadrant
-	}
-
-	private Double normalizeAngle(Double angle)
-	{
-	    return angle < 0 ? angle + 2 * Math.PI : angle; //This will make sure angle is [0..2PI]
 	}
 	
 	class Sort implements Comparator<Point>{

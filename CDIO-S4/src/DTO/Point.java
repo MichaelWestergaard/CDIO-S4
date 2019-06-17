@@ -18,6 +18,17 @@ public class Point {
 		this.x = x;
 		this.y = y;
 	}
+		
+	public double[] createLine(Point point) {
+		
+		double a = point.y - y;
+		double b = x - point.x;
+		double c = a*x + b*y;
+		
+		double[] returnArray = {a, b, c};
+		
+		return returnArray;
+	}
 
 	public double dist(Point point) {
 		return Math.abs(Math.sqrt(Math.pow(point.x - x, 2) + Math.pow(point.y - y, 2)));
