@@ -239,7 +239,7 @@ public class MapController {
 			double newDirectionY = 0;
 			double[] newDirectionCoordinates = null;
 			
-			instructionMap.put("rotate" + operationNum, robot.angleBetween(directionVector, coordinates.get(0)));
+			instructionMap.put("rotate" + operationNum, robot.angleBetween(directionVector, coordinates.get(0))*-1);
 			
 			if(robot.angleBetween(directionVector, coordinates.get(0)) > 0) {
 				System.out.println("Roterer til højre");
