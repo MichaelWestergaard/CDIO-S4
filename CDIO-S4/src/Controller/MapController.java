@@ -245,16 +245,16 @@ public class MapController {
 				System.out.println("Roterer til højre");
 				System.out.println("rotate" + operationNum + " " + robot.angleBetween(directionVector, coordinates.get(0)));
 				
-				newDirectionCoordinates = rotateDirection("højre");
-				newDirectionX = newDirectionCoordinates[0];
-				newDirectionY = newDirectionCoordinates[1];
+				//newDirectionCoordinates = rotateDirection("højre");
+				newDirectionX = (coordinates.get(0).getCoordinates()[0] * 2) - robot.getCoordinates()[0];
+				newDirectionY = (coordinates.get(0).getCoordinates()[1] * 2) - robot.getCoordinates()[1];
 			} else if(robot.angleBetween(directionVector, coordinates.get(0)) < 0) {
 				System.out.println("Roterer til venstre");
 				System.out.println("rotate" + operationNum + " " + robot.angleBetween(directionVector, coordinates.get(0)));
 				
-				newDirectionCoordinates = rotateDirection("venstre");
-				newDirectionX = newDirectionCoordinates[0];
-				newDirectionY = newDirectionCoordinates[1];
+				//newDirectionCoordinates = rotateDirection("venstre");
+				newDirectionX = (coordinates.get(0).getCoordinates()[0] * 2) - robot.getCoordinates()[0];
+				newDirectionY = (coordinates.get(0).getCoordinates()[1] * 2) - robot.getCoordinates()[1];
 			} else {
 				System.out.println("Roterer 10 grader");
 				instructionMap.put("rotate" + operationNum, 10.0);
