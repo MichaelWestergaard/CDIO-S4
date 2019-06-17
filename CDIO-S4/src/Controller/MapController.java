@@ -232,36 +232,51 @@ public class MapController {
 			
 			
 			
-			instructionMap.put("rotate" + operationNum, robot.angleBetween(directionVector, coordinates.get(0)));
-			System.out.println("rotate" + operationNum + " " + robot.angleBetween(directionVector, coordinates.get(0)));
+			//instructionMap.put("rotate" + operationNum, robot.angleBetween(directionVector, coordinates.get(0)));
+			//System.out.println("rotate" + operationNum + " " + robot.angleBetween(directionVector, coordinates.get(0)));
 			
-			/*
+			double newDirectionX = 0;
+			double newDirectionY = 0;
+			double[] newDirectionCoordinates = null;
+			
 			int direction = GetDirection(directionVector, coordinates.get(0), robot);
 			if(direction > 0) {
 				System.out.println("Roterer til højre");
 				instructionMap.put("rotate" + operationNum, robot.angleBetween(directionVector, coordinates.get(0)));
 				System.out.println("rotate" + operationNum + " " + robot.angleBetween(directionVector, coordinates.get(0)));
+				
+				newDirectionCoordinates = rotateDirection("højre");
+				newDirectionX = newDirectionCoordinates[0];
+				newDirectionY = newDirectionCoordinates[1];
+				
 			} else if(direction < 0) {
 				System.out.println("Roterer til venstre");
 				instructionMap.put("rotate" + operationNum, 0-(robot.angleBetween(directionVector, coordinates.get(0))));
 				System.out.println("rotate" + operationNum + " " + (0-(robot.angleBetween(directionVector, coordinates.get(0)))));
+				
+				newDirectionCoordinates = rotateDirection("venstre");
+				newDirectionX = newDirectionCoordinates[0];
+				newDirectionY = newDirectionCoordinates[1];
 			} else {
 				System.out.println("Roterer 10 grader");
 				instructionMap.put("rotate" + operationNum, 10.0);
 				System.out.println("rotate" + operationNum + " " + robot.angleBetween(directionVector, coordinates.get(0)));
-				double newDirectionX = Math.cos(10.0 * robot.x) - Math.sin(10.0 * robot.y);
-				double newDirectionY = Math.sin(10.0 * robot.x) + Math.cos(10.0 * robot.y);
+
+				newDirectionCoordinates = rotateDirection("retry");
+				newDirectionX = newDirectionCoordinates[0];
+				newDirectionY = newDirectionCoordinates[1];
+				
 				directionVector.setCoordinates(newDirectionX, newDirectionY);
 				continue;
 			}
-			*/
+			
 			
 			instructionMap.put("travel" + (operationNum + 1), robot.dist(coordinates.get(0)));
 			System.out.println("travel" + (operationNum + 1) + " " + robot.dist(coordinates.get(0)));
 			
 
-			double newDirectionX = Math.cos(robot.angleBetween(directionVector, coordinates.get(0)) * robot.x) - Math.sin(robot.angleBetween(directionVector, coordinates.get(0)) * robot.y);
-			double newDirectionY = Math.sin(robot.angleBetween(directionVector, coordinates.get(0)) * robot.x) + Math.cos(robot.angleBetween(directionVector, coordinates.get(0)) * robot.y);
+			//double newDirectionX = Math.cos(robot.angleBetween(directionVector, coordinates.get(0)) * robot.x) - Math.sin(robot.angleBetween(directionVector, coordinates.get(0)) * robot.y);
+			//double newDirectionY = Math.sin(robot.angleBetween(directionVector, coordinates.get(0)) * robot.x) + Math.cos(robot.angleBetween(directionVector, coordinates.get(0)) * robot.y);
 			
 			//double slope = (closestBallCoordinates[1] - robot.y)/(closestBallCoordinates[0] - robot.x);   
 			//double intersect = robot.y - (slope * robot.x);
@@ -287,6 +302,50 @@ public class MapController {
 
 	}
 
+	private double[] rotateDirection(String retning) {
+				//Gang alle punkternes y-koordinat med -1 for at konvertere
+				//det til et 'normalt' koordinat, så det kan beregnes med funktionen.
+				//Til sidst i funktionen ganges y resultatet med -1 for at konvertere
+				//Det tilbage til det oprindelige format.
+				
+				
+				double directionX = directionVector.x;
+				double directionY = directionVector.y * -1;
+				
+				double robotX = robot.x;
+				double robotY = robot.y * -1;
+				
+				double ballX = coordinates.get(0).x;
+				double ballY = coordinates.get(0).y;
+				
+				double angle = robot.angleBetween(directionVector, coordinates.get(0));
+				
+				if(retning.equalsIgnoreCase("venstre")) {
+					angle = 0 - angle;
+				} else if(retning.equalsIgnoreCase("retry")) {
+					angle = 10;
+				}
+
+				double newX = ((directionX - robotX) * Math.cos(Math.toRadians(angle))) - ((robotY - directionY) * Math.sin(Math.toRadians(angle))) + robotX;
+				
+				double slope = (ballY - robotY)/(ballX - robotX);
+				double intersect = robotY - slope * robotX;
+				
+				double newY = slope * newX + intersect;
+				
+				System.out.println("a: " + slope);
+				System.out.println("b: " + intersect);
+				
+				System.out.println("newX: " + newX);
+				System.out.println("newY: " + newY);
+		
+				newY *= -1;
+				
+				double[] results = {newX, newY};
+				
+				return results;
+	}
+	
 	public int GetDirection(Point direction, Point ball, Point robot)
 	{
 		direction.y *= -1;
