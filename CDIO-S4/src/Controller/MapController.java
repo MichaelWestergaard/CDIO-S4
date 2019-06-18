@@ -35,11 +35,15 @@ public class MapController {
 	public Robot robot;
 	private int[][] map = null;
 	private boolean ready = true;
+	private boolean isConnected = false;
+	BufferedReader reader;
+	ObjectOutputStream mapOutputStream;
+	OutputStream outputStream;
 	
 	Socket socket;
 	String readline;
 	Map<String, Double> myMap = new HashMap<String, Double>();
-	boolean moreBalls;
+	boolean moreBalls = true;
 	
 	public MapController() {
 		if(map == null) {
@@ -52,6 +56,10 @@ public class MapController {
 			socket = new Socket("192.168.43.31", 3005);		
 			socket.setKeepAlive(true);
 			socket.setSoTimeout(0);
+			isConnected = true;
+			outputStream = socket.getOutputStream();
+			mapOutputStream = new ObjectOutputStream(outputStream);
+			reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -61,72 +69,83 @@ public class MapController {
 	
 	public Map<String,Double> fillMap() {
 		Map<String, Double> x = new HashMap<String, Double>();
-/*		for(int i = 20; i < 30; i++) {
-		x.put("rotate" + i, (double) i);
-		x.put("travel" + i , (double) i-15);
-		}
-*/		
-	//	x.put("rotate1", 360.0*2);
-	
 		
 		return x;
 	}
 	
 	public void loadMap(int[][] loadMap) throws IOException {
+		if(!isConnected) {
+			init();
+		}
 		
+		int sameCounter = 0;
+		if(map != null) {
+			for (int x = 0; x < map.length; x++) { //r�kkerne
+				for (int y = 0; y < map[x].length; y++) { //kolonnerne
+					if(map[x][y] != loadMap[x][y]) {
+						sameCounter++;
+					}
+
+				}
+			}
+		System.out.println("Same counter: " + sameCounter);	
+		}
 		map = loadMap;
 		ready = false;
+		primaryFunc();
+	    
+	}
+	
+	private void primaryFunc() throws IOException{
+	    
 		findBalls();
 		findShortestPath();
 		
-		moreBalls = true;
-		init();
+    	if(coordinates.size() == 0) {
+    		//Find vej til mål
+		    System.out.println("no more balls");
+    	}
 		
-		OutputStream outputStream = socket.getOutputStream();
-	    ObjectOutputStream mapOutputStream = new ObjectOutputStream(outputStream);
-	    BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-
-	    mapOutputStream.writeObject(instructionMap);
-	    mapOutputStream.flush();		    	
-   
-	    int tempClose = 0;
+	    String line = null;
 	    
-	    System.out.println(instructionMap);
-	    
-	    while(moreBalls) {
-		    String line = null;
-
-	    	while((line = reader.readLine()) != null) {
-
-			    //Find flere bolde med kameraet og sæt dem ind i et HashMap
-	    		//De kan ikke have samme key, så de må klades f.eks. travel1, travel2, travel3 osv. og så fjerne disse tal når mappet er blevet sendt.
-
-			    System.out.println("skal have nyt map, da der er flere bolde tilbage");
-	    		
-	    		//mapOutputStream.writeObject(instructionMap);
-			    mapOutputStream.flush();
-			    
-			    tempClose++;
-			    
-			    break;
-	    	}
-	    	
-		    //En eller anden betingelse der styrer hvornår robotten ikke skal køre mere, e.g. at kameratet ikke kan se flere bolde.
-		    if(tempClose == 1) {
-		    	moreBalls = false;
-		    }
-	    	
-	    }
-
-	    //Send et tomt map når forbindelsen skal lukkes.
-	    Map<String, Double> stopMap = new HashMap<String, Double>();
-	    
-	    mapOutputStream.writeObject(stopMap);
+		mapOutputStream.writeObject(instructionMap);
 	    mapOutputStream.flush();
-	    mapOutputStream.close();
-
-	    System.out.println("Alt er sendt");
 	    
+	    
+	    while(true) {
+	    	line = reader.readLine();
+	    	System.out.println(instructionMap);
+	    	System.out.println(line);
+	    	
+	    	if(line.equals("next")) {
+	    		ready = true;
+	    		System.out.println("Thank u , next ");
+	    		break;
+	    	}   
+	    }
+    	/*while((line = reader.readLine()) != null) {
+	    	System.out.println(instructionMap);
+	    	System.out.println(line);
+	    	
+	    	if(line.equals("next")) {
+	    		ready = true;
+	    		System.out.println("Thank u , next ");
+	    		break;
+	    	}    	
+    	}*/
+
+	    //Send vejen til målet og victory
+	    
+	    /*if(coordinates.size() == 0) {
+	    	Map<String, Double> stopMap = new HashMap<String, Double>();
+	    
+	    	mapOutputStream.writeObject(stopMap);
+	    	mapOutputStream.flush();
+	    	mapOutputStream.close();
+
+	    	System.out.println("Alt er sendt");
+	    }*/
+	    //Send et tomt map når forbindelsen skal lukkes.
 	}
 	
 	public boolean isReady() {
@@ -134,6 +153,7 @@ public class MapController {
 	}
 	
 	public void findBalls() {
+		coordinates.clear();
 		//int ballcounter;
 		boolean ballStatus = false;
     
@@ -156,9 +176,6 @@ public class MapController {
 
 				if(map[x][y] == 5) {
 					smallGoal = new Goal(x,y);
-					/*else if (map[x+15][y] == 5) {
-						bigGoal = new Goal(x,y);
-					}*/
 				}
 
 				if(map[x][y] == 1) {
@@ -179,17 +196,6 @@ public class MapController {
 
 			}
 		}
-		//System.out.println();
-
-		/*int minusCounter = 0;
-		for(int test = 0; test < 120;test++) {
-			System.out.println(test);
-			if(map[1][test] == -1) {
-				minusCounter++;
-				System.out.println("Antal forhindringer: " + minusCounter);
-			}
-
-		}*/
 		printBallCoordinates();
 	}
 
@@ -209,45 +215,35 @@ public class MapController {
 
 		int iterator = coordinates.size();
 		int operationNum = 0;
-
 		
-		double robotDirectionDistance = Math.sqrt(Math.abs((robot.x - directionVector.x))*Math.abs((robot.x - directionVector.x)) + Math.abs((robot.y - directionVector.y))*Math.abs((robot.y - directionVector.y)));
-		//double robotDirectionYDiff = Math.abs(robot.y - directionVector.y);
-		//double robotDirectionXDiff = Math.abs(robot.x - directionVector.x);
+		instructionMap.put("rotate" + operationNum, robot.angleBetween(directionVector, coordinates.get(0)));
+		System.out.println("rotate" + operationNum + " " + robot.angleBetween(directionVector, coordinates.get(0)));
+		instructionMap.put("travel" + (operationNum + 1), robot.dist(coordinates.get(0)));
+		System.out.println("travel" + (operationNum + 1) + " " + robot.dist(coordinates.get(0)));
+		
+		System.out.println("Antal bolde der mangler at blive besøgt: "+ coordinates.size());
+		
+		//double robotDirectionDistahttps://github.com/MichaelWestergaard/CDIO-S4/pull/4/conflict?name=CDIO-S4%252Fsrc%252FController%252FMapController.java&ancestor_oid=dca31eb1e5528652fc3b942443f450a99f953c27&base_oid=87f8fc831efe2bebb14721ef1b6725f737e20746&head_oid=15b6ad6b433e6eade50320309f8e8828c3620dd0nce = Math.sqrt(Math.abs((robot.x - directionVector.x))*Math.abs((robot.x - directionVector.x)) + Math.abs((robot.y - directionVector.y))*Math.abs((robot.y - directionVector.y)));
 		
 		
-		for(int i = 0; i < iterator; i++) {
+		/*for(int i = 0; i < iterator; i++) {
 			Collections.sort(coordinates, new Sort());
 			double[] closestBallCoordinates = coordinates.get(0).getCoordinates();
-
-			/*for(int j = 0; j < coordinates.size(); j++) {
-				System.out.println("robot "+ robot+ "  direction  " + directionVector);
-				System.out.println(coordinates.get(j)+ " dist = " + robot.dist(coordinates.get(j)) + " angle = " + robot.angleBetween(directionVector, coordinates.get(j)));
-				instructionMap.put("rotate" + operationNum, robot.angleBetween(directionVector, coordinates.get(j)));
-				System.out.println("rotate" + operationNum + " " + robot.angleBetween(directionVector, coordinates.get(j)));
-				instructionMap.put("travel" + (operationNum + 1), robot.dist(coordinates.get(j)));
-				System.out.println("travel" + (operationNum + 1) + " " + robot.dist(coordinates.get(j)));
-				operationNum += 2;
-			}*/
-			
-			
-			
-			//instructionMap.put("rotate" + operationNum, robot.angleBetween(directionVector, coordinates.get(0)));
-			//System.out.println("rotate" + operationNum + " " + robot.angleBetween(directionVector, coordinates.get(0)));
 			
 			double newDirectionX = 0;
 			double newDirectionY = 0;
-			double[] newDirectionCoordinates = null;
+			Point newDirectionCoordinates = null;
 			
 			instructionMap.put("rotate" + operationNum, robot.angleBetween(directionVector, coordinates.get(0))*-1);
 			
 			if(robot.angleBetween(directionVector, coordinates.get(0)) > 0) {
 				System.out.println("Roterer til højre");
 				System.out.println("rotate" + operationNum + " " + robot.angleBetween(directionVector, coordinates.get(0)));
-				
-				//newDirectionCoordinates = rotateDirection("højre");
+
+        //newDirectionCoordinates = rotateDirection("højre");
 				newDirectionX = (coordinates.get(0).getCoordinates()[0] * 2) - robot.getCoordinates()[0];
 				newDirectionY = (coordinates.get(0).getCoordinates()[1] * 2) - robot.getCoordinates()[1];
+
 			} else if(robot.angleBetween(directionVector, coordinates.get(0)) < 0) {
 				System.out.println("Roterer til venstre");
 				System.out.println("rotate" + operationNum + " " + robot.angleBetween(directionVector, coordinates.get(0)));
@@ -255,91 +251,113 @@ public class MapController {
 				//newDirectionCoordinates = rotateDirection("venstre");
 				newDirectionX = (coordinates.get(0).getCoordinates()[0] * 2) - robot.getCoordinates()[0];
 				newDirectionY = (coordinates.get(0).getCoordinates()[1] * 2) - robot.getCoordinates()[1];
+
 			} else {
 				System.out.println("Roterer 10 grader");
 				instructionMap.put("rotate" + operationNum, 10.0);
 				System.out.println("rotate" + operationNum + " " + robot.angleBetween(directionVector, coordinates.get(0)));
 
-				newDirectionCoordinates = rotateDirection("retry");
-				newDirectionX = newDirectionCoordinates[0];
-				newDirectionY = newDirectionCoordinates[1];
+				newDirectionCoordinates = rotateDirection(coordinates.get(0), true);
+				newDirectionX = newDirectionCoordinates.x;
+				newDirectionY = newDirectionCoordinates.y;
 				
-				directionVector.setCoordinates(newDirectionX, newDirectionY);
+				//directionVector.setCoordinates(newDirectionX, newDirectionY);
 				continue;
 			}
 			
-			/*
-			int direction = GetDirection(directionVector, coordinates.get(0), robot);
-			if(direction > 0) {
-				System.out.println("Roterer til højre");
-				instructionMap.put("rotate" + operationNum, robot.angleBetween(directionVector, coordinates.get(0)));
-				System.out.println("rotate" + operationNum + " " + robot.angleBetween(directionVector, coordinates.get(0)));
-				
-				newDirectionCoordinates = rotateDirection("højre");
-				newDirectionX = newDirectionCoordinates[0];
-				newDirectionY = newDirectionCoordinates[1];
-				
-			} else if(direction < 0) {
-				System.out.println("Roterer til venstre");
-				instructionMap.put("rotate" + operationNum, 0-(robot.angleBetween(directionVector, coordinates.get(0))));
-				System.out.println("rotate" + operationNum + " " + (0-(robot.angleBetween(directionVector, coordinates.get(0)))));
-				
-				newDirectionCoordinates = rotateDirection("venstre");
-				newDirectionX = newDirectionCoordinates[0];
-				newDirectionY = newDirectionCoordinates[1];
-			} else {
-				System.out.println("Roterer 10 grader");
-				instructionMap.put("rotate" + operationNum, 10.0);
-				System.out.println("rotate" + operationNum + " " + robot.angleBetween(directionVector, coordinates.get(0)));
-
-				newDirectionCoordinates = rotateDirection("retry");
-				newDirectionX = newDirectionCoordinates[0];
-				newDirectionY = newDirectionCoordinates[1];
-				
-				directionVector.setCoordinates(newDirectionX, newDirectionY);
-				continue;
-			}
-			*/			
 			
 			instructionMap.put("travel" + (operationNum + 1), robot.dist(coordinates.get(0)));
 			System.out.println("travel" + (operationNum + 1) + " " + robot.dist(coordinates.get(0)));
 			
-
-			//double newDirectionX = Math.cos(robot.angleBetween(directionVector, coordinates.get(0)) * robot.x) - Math.sin(robot.angleBetween(directionVector, coordinates.get(0)) * robot.y);
-			//double newDirectionY = Math.sin(robot.angleBetween(directionVector, coordinates.get(0)) * robot.x) + Math.cos(robot.angleBetween(directionVector, coordinates.get(0)) * robot.y);
-			
-			//double slope = (closestBallCoordinates[1] - robot.y)/(closestBallCoordinates[0] - robot.x);   
-			//double intersect = robot.y - (slope * robot.x);
-			
-			//double distanceFormula = Math.abs(slope*closestBallCoordinates[0]+intersect-closestBallCoordinates[1])/Math.sqrt(slope*slope+1);
-			
-			
-			
-			
 			System.out.println("Antal bolde der mangler at blive besøgt: "+ coordinates.size());
 
 			//directionVector.setCoordinates(newDirectionX + closestBallCoordinates[0], newDirectionY + closestBallCoordinates[1]);
-			directionVector.setCoordinates(newDirectionX, newDirectionY);
-
-			
+			directionVector.setCoordinates(newDirectionX, newDirectionY);			
 			
 			robot.setCoordinates(closestBallCoordinates[0], closestBallCoordinates[1]);	
 			operationNum += 2;
 
 			coordinates.remove(0);
 
-		}
+		}*/
 
 	}
 
-	private double[] rotateDirection(String retning) {
+	private Point rotateDirection(Point ballPoint, boolean findLongestDist) {		
+		Point returnPoint = new Point(0,0);
+		
+		double xDiff = Math.abs(directionVector.x - robot.x);
+		double yDiff = Math.abs(directionVector.y - robot.y);
+		
+		double realRadius = Math.sqrt(xDiff*xDiff + yDiff*yDiff);
+		
+		double slope = (ballPoint.y - robot.y)/(ballPoint.x - robot.x);
+		double intersect = robot.y - slope * robot.x;
+		
+		//double circleIntersect = Math.pow((x-90),2) + Math.pow((slope*x+intersect-60), 2) - realRadius*realRadius;
+		
+		double firstEquationPart = slope*slope + 1;
+		double secondEquationPart = 2*slope*(intersect-robot.y)-(2 * robot.x);
+		double thirdEquationPart = (intersect-robot.y)*(intersect-robot.y) - realRadius*realRadius + robot.x*robot.x;
+		
+		double circleIntersectionPos = (0-secondEquationPart + (Math.sqrt((secondEquationPart * secondEquationPart - 4*firstEquationPart*thirdEquationPart))))/(2*firstEquationPart);
+		double circleIntersectionNeg = (0-secondEquationPart - Math.sqrt(Math.pow(secondEquationPart, 2) - 4*firstEquationPart*thirdEquationPart))/(2*firstEquationPart);
+		/*
+		System.out.println("fakeRadius: " + fakeRadius);
+		System.out.println("Camera Angel: " + cameraAngel);
+		System.out.println("radiusDiff: " + radiusDiff);
+		System.out.println("realRadius: " + realRadius);
+		System.out.println("slope: " + slope);
+		System.out.println("intersect: " + intersect);
+		System.out.println("a: " + firstEquationPart);
+		System.out.println("b: " + secondEquationPart);
+		System.out.println("c " + thirdEquationPart);
+		
+		System.out.println("First intersection x-coordinate: " + circleIntersectionPos);
+		System.out.println("Second intersection x-coordinate: " + circleIntersectionNeg);*/
+		
+		double yForPos = slope * circleIntersectionPos + intersect;
+		double yForNeg = slope * circleIntersectionNeg + intersect;
+		/*
+		System.out.println("y1: " + yForPos);
+		System.out.println("y2: " + yForNeg);*/
+		
+		Point pPos = new Point(circleIntersectionPos, yForPos);
+		Point pNeg = new Point(circleIntersectionNeg, yForNeg);
+		
+		double distToPPos = ballPoint.dist(pPos);
+		double distToPNeg = ballPoint.dist(pNeg);
+/*
+		System.out.println("dist pPos: " + distToPPos);
+		System.out.println("dist pNeg: " + distToPNeg);*/
+		
+		if(findLongestDist) {
+			if(distToPNeg < distToPPos) {
+				returnPoint.setCoordinates(circleIntersectionPos, yForPos);
+				
+			}else {
+				returnPoint.setCoordinates(circleIntersectionNeg, yForNeg);
+			}
+		} else {
+			if(distToPNeg > distToPPos) {
+				returnPoint.setCoordinates(circleIntersectionPos, yForPos);
+				
+			}else {
+				returnPoint.setCoordinates(circleIntersectionNeg, yForNeg);
+			}
+		}
+		
+		System.out.println("Point coordinates: " + returnPoint.x + " " + returnPoint.y);
+		return returnPoint;	
+
+		
 				//Gang alle punkternes y-koordinat med -1 for at konvertere
 				//det til et 'normalt' koordinat, så det kan beregnes med funktionen.
 				//Til sidst i funktionen ganges y resultatet med -1 for at konvertere
 				//Det tilbage til det oprindelige format.
 				
 				
-				double directionX = directionVector.x;
+				/*double directionX = directionVector.x;
 				double directionY = directionVector.y * -1;
 				
 				double robotX = robot.x;
@@ -350,10 +368,10 @@ public class MapController {
 				
 				double angle = robot.angleBetween(directionVector, coordinates.get(0));
 				
-				/*
+				
 				if(retning.equalsIgnoreCase("venstre")) {
 					angle = 0 - angle;
-				} else*/ if(retning.equalsIgnoreCase("retry")) {
+				} else if(retning.equalsIgnoreCase("retry")) {
 					angle = 10;
 				}
 
@@ -388,6 +406,7 @@ public class MapController {
 				double[] results = {newX, newY};
 				
 				return results;
+				*/
 	}
 	
 	public int GetDirection(Point direction, Point ball, Point robot)
