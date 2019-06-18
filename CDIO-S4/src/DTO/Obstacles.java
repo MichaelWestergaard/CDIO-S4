@@ -7,6 +7,7 @@ import java.util.List;
 public class Obstacles extends Point{
 	
 	double diameter;
+	List<Point> squarePoints;
 
 	public Obstacles(double x, double y) {
 		super(x, y);
@@ -68,6 +69,14 @@ public class Obstacles extends Point{
 
 	public void setDiameter(double diameter) {
 		this.diameter = diameter;
+	}
+
+	public List<Point> getSquarePoints() {
+		return squarePoints;
+	}
+
+	public void setSquarePoints(List<Point> squarePoints) {
+		this.squarePoints = squarePoints;
 	}
 
 	@Override

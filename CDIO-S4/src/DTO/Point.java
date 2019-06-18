@@ -68,7 +68,13 @@ public class Point {
 		/*if(calcAngle(dpoint,ballpoint)>180) {
 			return Math.acos(360 - calcAngle(dpoint,ballpoint));
 		}*/
-		return calcAngle(dpoint,ballpoint);
+		return calcAngle(dpoint,ballpoint)*-1;
 
 	}
+
+	@Override
+	public String toString() {
+		return "Point [x=" + x + ", y=" + y + "]";
+	}
+	
 }

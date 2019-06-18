@@ -46,26 +46,32 @@ public class RouteController {
 		int iterator = balls.size();
 		int i = 0;
 			
+		System.out.println("Balls = " + balls);
+		System.out.println("Obstacle = " + obstacle);
+		System.out.println("Diameter = " + obstacle.getDiameter());
+		System.out.println("Square = " + obstacle.getSquarePoints().get(0) + " | " + obstacle.getSquarePoints().get(1) + " | " + obstacle.getSquarePoints().get(2) + " | " + obstacle.getSquarePoints().get(3));
+		System.out.println("robot = " + robot);		
+		System.out.println("Direction = " + robot.getDirectionVector());
+		
 		while(i < iterator) {
 			Collections.sort(balls, new Sort());
 			
 			Ball ball = balls.get(i);
-			System.out.println(robot);
-			if(getRoute(ball)) {
-				balls.remove(ball);
-				iterator = balls.size();
-				//i++;
-			} else {
-				System.out.println("try again");
-			}
+		
+			getRoute(ball);
+			balls.remove(ball);
+			iterator = balls.size();
 		}
 		
+		System.out.println("" + instructions);
 		return instructions;
 	}
 	
 	private boolean getRoute(Ball ball) {
 		boolean crossBlocking = false;
 
+		System.out.println("ball = " + ball);
+		
 		List<Point> intersectionPoints = obstacle.getCircleLineIntersectionPoint(robot, ball);
 
 		if(!intersectionPoints.isEmpty()) {
@@ -83,31 +89,93 @@ public class RouteController {
 			robot.getDirectionVector().setCoordinates(newDirectionCoordinates.x, newDirectionCoordinates.y);
 			return true;
 		} else {
-			System.out.println("Direct way is blocked, need to find an alternative route");			
-
-			if(obstacle.isInside(ball)) {
-				System.out.println("ball is inside circle");
-				
-				Point closestIntersectionPoint = null;
-				
-				double minDist = Integer.MAX_VALUE;
-				
-				for (Point point : intersectionPoints) {
-					double tempDist = point.dist(ball);
-					if(tempDist < minDist) {
-						closestIntersectionPoint = point;
-						minDist = tempDist;
-					}
+			System.out.println("Direct way is blocked, need to find an alternative route");	
+			
+			/*
+			Point closestIntersectionPoint = null;
+			
+			double minDist = Integer.MAX_VALUE;
+			
+			for (Point point : intersectionPoints) {
+				double tempDist = point.dist(ball);
+				if(tempDist < minDist) {
+					closestIntersectionPoint = point;
+					minDist = tempDist;
+				}
+			}
+			
+			System.out.println("Need to go to " + closestIntersectionPoint.x + ", " + closestIntersectionPoint.y + " and then rotate and travel to " + ball);
+			*/
+			
+			Point finalDestination = null;
+			double distance = Double.MAX_VALUE;
+			
+			Point firstDestination = null;
+			double distanceToRobot = Double.MAX_VALUE;
+			
+			for(Point point : obstacle.getSquarePoints()) {
+				if(point.dist(ball) < distance) {
+					finalDestination = point;
+					distance = point.dist(ball);
 				}
 				
-				System.out.println("Need to go to " + closestIntersectionPoint.x + ", " + closestIntersectionPoint.y + " and then rotate and travel to " + ball);
-				
-			} else {
-				System.out.println("ball is outside circle");
-
-				System.out.println("Need to go to " + ball);
-				// Kør hen til uden for cirklen () rotate -> travel -> rotate travel indtil du har bolden.
+				if(point.dist(robot) < distanceToRobot) {
+					firstDestination = point;
+					distanceToRobot = point.dist(robot);
+				}
 			}
+			
+			addInstruction("rotate", robot.angleBetween(robot.getDirectionVector(), firstDestination));
+			addInstruction("travel", distanceToRobot);
+			
+			robot.getDirectionVector().setCoordinates((firstDestination.x * 2) - robot.x, (firstDestination.y * 2) - robot.y);
+			robot.setCoordinates(firstDestination.x, firstDestination.y);
+			
+			Point currentPoint = firstDestination;
+			
+			System.out.println("firstDestination " + firstDestination);
+			
+			while(!currentPoint.equals(finalDestination)) {
+				int index = obstacle.getSquarePoints().indexOf(currentPoint);
+				
+				switch(index) {
+					case 0:
+						currentPoint = obstacle.getSquarePoints().get(1);
+						break;
+					case 1:
+						currentPoint = obstacle.getSquarePoints().get(3);
+						break;
+					case 2:
+						currentPoint = obstacle.getSquarePoints().get(0);
+						break;
+					case 3:
+						currentPoint = obstacle.getSquarePoints().get(2);
+						break;
+				}
+				
+				addInstruction("rotate", robot.angleBetween(robot.getDirectionVector(), currentPoint));
+				addInstruction("travel", obstacle.getDiameter());
+				
+				robot.getDirectionVector().setCoordinates((currentPoint.x * 2) - robot.x, (currentPoint.y * 2) - robot.y);
+				robot.setCoordinates(currentPoint.x, currentPoint.y);
+				
+				System.out.println("currentPoint = " + currentPoint);
+			}
+			System.out.println("finalDestination = " + finalDestination);
+			
+			addInstruction("rotate", robot.angleBetween(robot.getDirectionVector(), ball));
+			addInstruction("travel", robot.dist(ball));
+			
+			robot.getDirectionVector().setCoordinates((ball.x * 2) - robot.x, (ball.y * 2) - robot.y);
+			
+			if(obstacle.isInside(ball)) {
+				addInstruction("travel", (robot.dist(ball))*-1);
+			} else {
+				robot.setCoordinates(ball.x, ball.y);
+			}	
+			
+			System.out.println("NewRobot =" + robot);
+			
 			return true;
 		}
 	}
@@ -171,23 +239,7 @@ public class RouteController {
 
 		@Override
 		public int compare(Point point1, Point point2) { 
-
-			try {
-			if(robot.dist(point1) < robot.dist(point2)) {
-				return -1;
-			}
-			if(robot.dist(point2) < robot.dist(point1)) {
-				return 1;
-			}
-
-			return 0;
-			} catch (Exception e) {
-				
-			} finally {
-				return 0;
-			}
+			return Double.compare(robot.dist(point1), robot.dist(point2));
 		}
-
-	}
-	
+	}	
 }

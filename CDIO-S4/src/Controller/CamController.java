@@ -418,7 +418,22 @@ public class CamController {
 				}
 	        }
 	        Obstacles obstacle = new Obstacles(center.x, center.y);
-	        obstacle.setDiameter((diameter/2) + robot.dist(directionPoint)/2);
+	        obstacle.setDiameter((diameter*2));
+	        
+	        List<DTO.Point> squarePoints = new ArrayList<DTO.Point>();
+	        //Index0 = øverst venstre, index1 = øverst højre, index2 = nederst venstre, index3 = nederst højre
+	        squarePoints.add(new DTO.Point((center.x - (obstacle.getDiameter()/2)), (center.y - (obstacle.getDiameter()/2))));
+	        squarePoints.add(new DTO.Point(squarePoints.get(0).x + obstacle.getDiameter(), squarePoints.get(0).y));
+	        squarePoints.add(new DTO.Point(squarePoints.get(0).x, squarePoints.get(0).y + obstacle.getDiameter()));
+	        squarePoints.add(new DTO.Point(squarePoints.get(0).x + obstacle.getDiameter(), squarePoints.get(0).y + obstacle.getDiameter()));
+	        
+	        obstacle.setSquarePoints(squarePoints);
+	        /*
+	        Imgproc.circle(matFrame, squarePoints.get(0), 2, new Scalar(250, 250, 250));
+	        Imgproc.circle(matFrame, squarePoints.get(1), 2, new Scalar(250, 250, 250));
+	        Imgproc.circle(matFrame, squarePoints.get(2), 2, new Scalar(250, 250, 250));
+	        Imgproc.circle(matFrame, squarePoints.get(3), 2, new Scalar(250, 250, 250));
+	        */
 	        
 	        System.out.println("Getting instructions");
 	        
@@ -1154,7 +1169,7 @@ public class CamController {
 		//Mat newCameraMtx = Calib3d.getOptimalNewCameraMatrix(cameraMatrix, distCoeffs, new Size(srcImg.width(), srcImg.height()), 1, new Size(srcImg.width(), srcImg.height()));
 		//Calib3d.undistort(srcImg, img, cameraMatrix, distCoeffs, newCameraMtx);
 		
-		Calib3d.undistort(srcImg, matFrame, cameraMatrix, distCoeffs);
+		//Calib3d.undistort(srcImg, matFrame, cameraMatrix, distCoeffs);
 		
 	}
 	
