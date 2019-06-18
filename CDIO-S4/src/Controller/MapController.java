@@ -43,7 +43,7 @@ public class MapController {
 	Socket socket;
 	String readline;
 	Map<String, Double> myMap = new HashMap<String, Double>();
-	boolean moreBalls;
+	boolean moreBalls = true;
 	
 	public MapController() {
 		if(map == null) {
@@ -57,6 +57,9 @@ public class MapController {
 			socket.setKeepAlive(true);
 			socket.setSoTimeout(0);
 			isConnected = true;
+			outputStream = socket.getOutputStream();
+			mapOutputStream = new ObjectOutputStream(outputStream);
+			reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -71,54 +74,78 @@ public class MapController {
 	}
 	
 	public void loadMap(int[][] loadMap) throws IOException {
+		if(!isConnected) {
+			init();
+		}
 		
+		int sameCounter = 0;
+		if(map != null) {
+			for (int x = 0; x < map.length; x++) { //r�kkerne
+				for (int y = 0; y < map[x].length; y++) { //kolonnerne
+					if(map[x][y] != loadMap[x][y]) {
+						sameCounter++;
+					}
+
+				}
+			}
+		System.out.println("Same counter: " + sameCounter);	
+		}
 		map = loadMap;
 		ready = false;
+		primaryFunc();
+	    
+	}
+	
+	private void primaryFunc() throws IOException{
+	    
 		findBalls();
 		findShortestPath();
 		
-		moreBalls = true;
-		if(!isConnected) {
-		init();
-		outputStream = socket.getOutputStream();
-	    mapOutputStream = new ObjectOutputStream(outputStream);
-	    reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-		}
-		  
+    	if(coordinates.size() == 0) {
+    		//Find vej til mål
+		    System.out.println("no more balls");
+    	}
+		
+	    String line = null;
 	    
-	    while(moreBalls) {
-		    String line = null;
-	    	while((line = reader.readLine()) != null) {
-	    		
-	    	mapOutputStream.writeObject(instructionMap);
-		    mapOutputStream.flush();			    	
+		mapOutputStream.writeObject(instructionMap);
+	    mapOutputStream.flush();
+	    
+	    
+	    while(true) {
+	    	line = reader.readLine();
 	    	System.out.println(instructionMap);
+	    	System.out.println(line);
 	    	
-	    	if(reader.read() == 1) {
+	    	if(line.equals("next")) {
 	    		ready = true;
-		    	System.out.println("Dette virker");
-	    	}
-			    break;
-	    	}
-	    	
-	    	if(balls.size() == 0) {
-		    	moreBalls = false;
-		    }
-	    	
+	    		System.out.println("Thank u , next ");
+	    		break;
+	    	}   
 	    }
+    	/*while((line = reader.readLine()) != null) {
+	    	System.out.println(instructionMap);
+	    	System.out.println(line);
+	    	
+	    	if(line.equals("next")) {
+	    		ready = true;
+	    		System.out.println("Thank u , next ");
+	    		break;
+	    	}    	
+    	}*/
 
 	    //Send vejen til målet og victory
 	    
+	    /*if(coordinates.size() == 0) {
+	    	Map<String, Double> stopMap = new HashMap<String, Double>();
 	    
-	    //Send et tomt map når forbindelsen skal lukkes.
-	    Map<String, Double> stopMap = new HashMap<String, Double>();
-	    
-	    mapOutputStream.writeObject(stopMap);
-	    mapOutputStream.flush();
-	    mapOutputStream.close();
+	    	mapOutputStream.writeObject(stopMap);
+	    	mapOutputStream.flush();
+	    	mapOutputStream.close();
 
-	    System.out.println("Alt er sendt");
-	    
+	    	System.out.println("Alt er sendt");
+	    }*/
+	    //Send et tomt map når forbindelsen skal lukkes.
 	}
 	
 	public boolean isReady() {
@@ -126,6 +153,7 @@ public class MapController {
 	}
 	
 	public void findBalls() {
+		coordinates.clear();
 		//int ballcounter;
 		boolean ballStatus = false;
     
@@ -187,12 +215,18 @@ public class MapController {
 
 		int iterator = coordinates.size();
 		int operationNum = 0;
-
 		
-		double robotDirectionDistance = Math.sqrt(Math.abs((robot.x - directionVector.x))*Math.abs((robot.x - directionVector.x)) + Math.abs((robot.y - directionVector.y))*Math.abs((robot.y - directionVector.y)));
+		instructionMap.put("rotate" + operationNum, robot.angleBetween(directionVector, coordinates.get(0)));
+		System.out.println("rotate" + operationNum + " " + robot.angleBetween(directionVector, coordinates.get(0)));
+		instructionMap.put("travel" + (operationNum + 1), robot.dist(coordinates.get(0)));
+		System.out.println("travel" + (operationNum + 1) + " " + robot.dist(coordinates.get(0)));
+		
+		System.out.println("Antal bolde der mangler at blive besøgt: "+ coordinates.size());
+		
+		//double robotDirectionDistance = Math.sqrt(Math.abs((robot.x - directionVector.x))*Math.abs((robot.x - directionVector.x)) + Math.abs((robot.y - directionVector.y))*Math.abs((robot.y - directionVector.y)));
 		
 		
-		for(int i = 0; i < iterator; i++) {
+		/*for(int i = 0; i < iterator; i++) {
 			Collections.sort(coordinates, new Sort());
 			double[] closestBallCoordinates = coordinates.get(0).getCoordinates();
 			
@@ -225,7 +259,7 @@ public class MapController {
 				newDirectionX = newDirectionCoordinates.x;
 				newDirectionY = newDirectionCoordinates.y;
 				
-				directionVector.setCoordinates(newDirectionX, newDirectionY);
+				//directionVector.setCoordinates(newDirectionX, newDirectionY);
 				continue;
 			}
 			
@@ -243,7 +277,7 @@ public class MapController {
 
 			coordinates.remove(0);
 
-		}
+		}*/
 
 	}
 
