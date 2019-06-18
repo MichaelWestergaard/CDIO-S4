@@ -36,6 +36,8 @@ public class MapController {
 	private int[][] map = null;
 	private boolean ready = true;
 	private boolean isConnected = false;
+	private boolean robotFound = false;
+	private boolean directionFound = false;
 	BufferedReader reader;
 	ObjectOutputStream mapOutputStream;
 	OutputStream outputStream;
@@ -101,6 +103,8 @@ public class MapController {
 		findBalls();
 		findShortestPath();
 		
+		
+		
     	if(coordinates.size() == 0) {
     		//Find vej til mål
 		    System.out.println("no more balls");
@@ -165,10 +169,12 @@ public class MapController {
 				if(map[x][y] == 9) {
 					robot = new Robot(x,y);
 					System.out.println("Robot:   " +robot);
+					robotFound = true;
 				}
 				if(map[x][y] == 3) {
 					directionVector = new Direction(x,y);
 					System.out.println("Retning :   " +directionVector);
+					directionFound = true;
 				}
 				if(map[x][y] == 4) {
 					goalPoint = new Direction(x,y);
@@ -196,6 +202,9 @@ public class MapController {
 
 			}
 		}
+		if(!(robotFound && directionFound)) {
+			
+		}
 		printBallCoordinates();
 	}
 
@@ -216,7 +225,7 @@ public class MapController {
 		int iterator = coordinates.size();
 		int operationNum = 0;
 		
-		instructionMap.put("rotate" + operationNum, robot.angleBetween(directionVector, coordinates.get(0)));
+		instructionMap.put("rotate" + operationNum, (-1)*robot.angleBetween(directionVector, coordinates.get(0)));
 		System.out.println("rotate" + operationNum + " " + robot.angleBetween(directionVector, coordinates.get(0)));
 		instructionMap.put("travel" + (operationNum + 1), robot.dist(coordinates.get(0)));
 		System.out.println("travel" + (operationNum + 1) + " " + robot.dist(coordinates.get(0)));
@@ -240,7 +249,7 @@ public class MapController {
 				System.out.println("Roterer til højre");
 				System.out.println("rotate" + operationNum + " " + robot.angleBetween(directionVector, coordinates.get(0)));
 
-        //newDirectionCoordinates = rotateDirection("højre");
+				//newDirectionCoordinates = rotateDirection("højre");
 				newDirectionX = (coordinates.get(0).getCoordinates()[0] * 2) - robot.getCoordinates()[0];
 				newDirectionY = (coordinates.get(0).getCoordinates()[1] * 2) - robot.getCoordinates()[1];
 
