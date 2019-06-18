@@ -223,7 +223,7 @@ public class MapController {
 		
 		System.out.println("Antal bolde der mangler at blive besøgt: "+ coordinates.size());
 		
-		//double robotDirectionDistance = Math.sqrt(Math.abs((robot.x - directionVector.x))*Math.abs((robot.x - directionVector.x)) + Math.abs((robot.y - directionVector.y))*Math.abs((robot.y - directionVector.y)));
+		//double robotDirectionDistahttps://github.com/MichaelWestergaard/CDIO-S4/pull/4/conflict?name=CDIO-S4%252Fsrc%252FController%252FMapController.java&ancestor_oid=dca31eb1e5528652fc3b942443f450a99f953c27&base_oid=87f8fc831efe2bebb14721ef1b6725f737e20746&head_oid=15b6ad6b433e6eade50320309f8e8828c3620dd0nce = Math.sqrt(Math.abs((robot.x - directionVector.x))*Math.abs((robot.x - directionVector.x)) + Math.abs((robot.y - directionVector.y))*Math.abs((robot.y - directionVector.y)));
 		
 		
 		/*for(int i = 0; i < iterator; i++) {
@@ -234,22 +234,24 @@ public class MapController {
 			double newDirectionY = 0;
 			Point newDirectionCoordinates = null;
 			
-			instructionMap.put("rotate" + operationNum, robot.angleBetween(directionVector, coordinates.get(0)));
+			instructionMap.put("rotate" + operationNum, robot.angleBetween(directionVector, coordinates.get(0))*-1);
 			
 			if(robot.angleBetween(directionVector, coordinates.get(0)) > 0) {
 				System.out.println("Roterer til højre");
 				System.out.println("rotate" + operationNum + " " + robot.angleBetween(directionVector, coordinates.get(0)));
-				
-				newDirectionCoordinates = rotateDirection(coordinates.get(0), true);
-				newDirectionX = newDirectionCoordinates.x;
-				newDirectionY = newDirectionCoordinates.y;
+
+        //newDirectionCoordinates = rotateDirection("højre");
+				newDirectionX = (coordinates.get(0).getCoordinates()[0] * 2) - robot.getCoordinates()[0];
+				newDirectionY = (coordinates.get(0).getCoordinates()[1] * 2) - robot.getCoordinates()[1];
+
 			} else if(robot.angleBetween(directionVector, coordinates.get(0)) < 0) {
 				System.out.println("Roterer til venstre");
 				System.out.println("rotate" + operationNum + " " + robot.angleBetween(directionVector, coordinates.get(0)));
 				
-				newDirectionCoordinates = rotateDirection(coordinates.get(0), true);
-				newDirectionX = newDirectionCoordinates.x;
-				newDirectionY = newDirectionCoordinates.y;
+				//newDirectionCoordinates = rotateDirection("venstre");
+				newDirectionX = (coordinates.get(0).getCoordinates()[0] * 2) - robot.getCoordinates()[0];
+				newDirectionY = (coordinates.get(0).getCoordinates()[1] * 2) - robot.getCoordinates()[1];
+
 			} else {
 				System.out.println("Roterer 10 grader");
 				instructionMap.put("rotate" + operationNum, 10.0);
