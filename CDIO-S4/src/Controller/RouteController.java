@@ -7,17 +7,13 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import Controller.MapController.Sort;
 import DTO.Ball;
-import DTO.Direction;
 import DTO.Goal;
 import DTO.Obstacles;
 import DTO.Point;
@@ -30,7 +26,6 @@ public class RouteController {
 	Obstacles obstacle;
 	Goal goal;
 	Robot robot;
-
 
 	private boolean ready = true;
 	private boolean isConnected = false;
@@ -62,9 +57,6 @@ public class RouteController {
 	//TODO: ROTATE SQUARE POINTS + INSTRUCTIONS TIL GOAL
 
 	public Map<String, Double> getInstruction(List<Ball> balls, Obstacles obstacle, Robot robot, Goal goal){
-		if(!isConnected) {
-			socketInit();
-		}
 		
 		instructions = new HashMap<String, Double>();
 		this.obstacle = obstacle;
@@ -97,7 +89,11 @@ public class RouteController {
 		return instructions;
 	}
 	
-	private void sendInstructions(Map<String, Double> instructions) {
+	public void sendInstructions() {
+		if(!isConnected) {
+			socketInit();
+		}
+		
 		String line = null;
 	    
 		ready = false;

@@ -1,33 +1,24 @@
 package Controller;
 
 import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
 import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
-import java.awt.image.RenderedImage;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Vector;
 
-import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JSlider;
 import javax.swing.SwingWorker;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -36,15 +27,12 @@ import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 
-import org.opencv.calib3d.Calib3d;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
-import org.opencv.core.MatOfByte;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
-import org.opencv.core.Rect;
 import org.opencv.core.RotatedRect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
@@ -86,6 +74,7 @@ public class CamController {
     private boolean useCam = true;
     private Mat mask, inRange, edges, ballsMask, robotMask;
     private MapController mapController;
+    private RouteController routeController = new RouteController();
     private boolean run = false;
     private boolean firstFrame = true;
     private Point topLeft, topRight, bottomLeft, bottomRight;
@@ -439,25 +428,16 @@ public class CamController {
 	        
 	        robot.setDirectionVector(new Direction(directionPoint.x, directionPoint.y));
 			new RouteController().getInstruction(balls, obstacle, robot, new Goal(5,1));
+			routeController.getInstruction(balls, obstacle, robot, new Goal(5,1));
 	        
 			Imgproc.circle(matFrame, center, (int) obstacle.getDiameter()/2, new Scalar(255,255,255));			
 		}
 		
 		if(areaLast > 0 && crossArea > 0) {
-			if(mapController.isReady() && run) {
-				generateMap(realImg);
-				counter++;
-				if(getMap() != null)
-					try {
-						mapController.loadMap(getMap());
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
+			if(routeController.isReady() && run) {
+				routeController.sendInstructions();
 			}
 		}
-		//System.out.println(counter);
-		
 		
         imgCaptureLabel.setIcon(new ImageIcon(HighGui.toBufferedImage(matFrame)));
         imgDetectionLabel.setIcon(new ImageIcon(HighGui.toBufferedImage(edges)));
