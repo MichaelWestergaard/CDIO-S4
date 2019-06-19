@@ -6,7 +6,7 @@
     <lowSatWalls>0</lowSatWalls>
     <lowValBalls>255</lowValBalls>
     <lowValWalls>61</lowValWalls>
-    <maxBallSize>20</maxBallSize>
+    <maxBallSize>4</maxBallSize>
     <maxHueBalls>190</maxHueBalls>
     <maxHueWalls>255</maxHueWalls>
     <maxSatBalls>80</maxSatBalls>
