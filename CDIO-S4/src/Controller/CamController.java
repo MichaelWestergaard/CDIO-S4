@@ -89,7 +89,7 @@ public class CamController {
     private Vector<Point> corners, target;
     private double minXVal, maxXVal, width, minYVal, maxYVal, height;
     private Mat perspectiveTransform;
-    private double cameraHeight = 158;
+    private double cameraHeight = 150;
     int counter = 0, debugNumber = 0 ;
     
     private FrameHelper frameHelper = new FrameHelper();
