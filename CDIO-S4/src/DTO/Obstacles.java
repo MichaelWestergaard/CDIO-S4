@@ -55,11 +55,19 @@ public class Obstacles extends Point{
 
         Point p1 = new Point(pointA.x - baX * abScalingFactor1, pointA.y
                 - baY * abScalingFactor1);
+        System.out.println("inside intersectionChecker " + p1);
+        
         if (disc == 0) { // abScalingFactor1 == abScalingFactor2
             return Collections.singletonList(p1);
         }
         Point p2 = new Point(pointA.x - baX * abScalingFactor2, pointA.y
                 - baY * abScalingFactor2);
+
+        System.out.println("inside intersectionChecker " + p2);
+        
+        if(Double.isNaN(p1.x) || Double.isNaN(p2.x))
+        	return Collections.emptyList();
+        
         return Arrays.asList(p1, p2);
     }
 		

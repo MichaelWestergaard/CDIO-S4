@@ -81,7 +81,7 @@ public class CamController {
     private Vector<Point> corners, target;
     private double minXVal, maxXVal, width, minYVal, maxYVal, height;
     private Mat perspectiveTransform;
-    private double cameraHeight = 168.8;
+    private double cameraHeight = 150;
     int counter = 0 ;
     double distRobot = 0.0;
     
@@ -99,7 +99,7 @@ public class CamController {
 		matFrame = new Mat();
 
 		if(useCam) {
-			videoCapture = new VideoCapture(0);
+			videoCapture = new VideoCapture(1);
 	        if (!videoCapture.isOpened()) {
 	            System.err.println("Cannot open camera");
 	            System.exit(0);
@@ -345,7 +345,7 @@ public class CamController {
 		if(verticesLast != null && rectLast != null) {
 			for(int j = 0; j < 4; j++) {
 				Imgproc.line(matFrame, verticesLast[j], verticesLast[(j+1)%4], new Scalar(0,255,0));
-				Imgproc.putText(matFrame, verticesLast[j] + "", verticesLast[j], 2, 0.5, new Scalar(250,250,250));
+				//Imgproc.putText(matFrame, verticesLast[j] + "", verticesLast[j], 2, 0.5, new Scalar(250,250,250));
 			}
 			/*
 			Mat src_mat=new Mat(4,1,CvType.CV_32FC2);
@@ -434,8 +434,9 @@ public class CamController {
 				}
 	        }
 	        
-	        Obstacles obstacle = new Obstacles(center.x, center.y);
-	        obstacle.setDiameter(diameter*2);
+	        Obstacles obstacle = new Obstacles(center.x/gridSizeHorizontal, center.y/gridSizeVertical);
+	        System.out.println("center: " + obstacle.x + " " + obstacle.x/gridSizeHorizontal + " " + center.x/gridSizeHorizontal + " " + center.x);
+	        obstacle.setDiameter(diameter);
 	        
 	        
 	        // Lav firkant rundt om cirkel
@@ -457,25 +458,34 @@ public class CamController {
 	        */
 	        
 	        //Imgproc.circle(matFrame, topL, 3, new Scalar(0,255, 0), Imgproc.FILLED);
-	        
+	        System.out.println("cam diameter: " + obstacle.getDiameter() + "obstacle " + center.x + " ");
 	        List<DTO.Point> squarePoints = new ArrayList<DTO.Point>();
 	        //Index0 = øverst venstre, index1 = øverst højre, index2 = nederst venstre, index3 = nederst højre
-	        squarePoints.add(new DTO.Point((center.x - (obstacle.getDiameter()/2)), (center.y - (obstacle.getDiameter()/2))));
+	       /* squarePoints.add(new DTO.Point((center.x - (obstacle.getDiameter())), (center.y - (obstacle.getDiameter()))));
 	        squarePoints.add(new DTO.Point(squarePoints.get(0).x + obstacle.getDiameter(), squarePoints.get(0).y));
 	        squarePoints.add(new DTO.Point(squarePoints.get(0).x, squarePoints.get(0).y + obstacle.getDiameter()));
 	        squarePoints.add(new DTO.Point(squarePoints.get(0).x + obstacle.getDiameter(), squarePoints.get(0).y + obstacle.getDiameter()));
+	        */
+	        
+	        squarePoints.add(new DTO.Point((obstacle.x - (obstacle.getDiameter()*1.1)), (obstacle.y - (obstacle.getDiameter()*1.1))));
+	        squarePoints.add(new DTO.Point((obstacle.x + (obstacle.getDiameter()*1.1)), (obstacle.y - (obstacle.getDiameter()*1.1))));
+	        squarePoints.add(new DTO.Point((obstacle.x - (obstacle.getDiameter()*1.1)), (obstacle.y + (obstacle.getDiameter()*1.1))));
+	        squarePoints.add(new DTO.Point((obstacle.x + (obstacle.getDiameter()*1.1)), (obstacle.y + (obstacle.getDiameter()*1.1))));
 	        
 	        obstacle.setSquarePoints(squarePoints);	        
 
-	        robot.setDirectionVector(new Direction(directionPoint.x, directionPoint.y));
-	        Goal goal = new Goal(matFrame.width()-5,matFrame.height()/2);
+	        if(robot != null) {
+	        	robot.setDirectionVector(new Direction(directionPoint.x, directionPoint.y));
+	        }
+	        Goal goal = new Goal(matFrame.width(), (matFrame.height()/2));
 	        fixCoordinates(balls, obstacle, robot, goal);
 
 	        System.out.println("Getting instructions");
-			routeController.getInstruction(balls, obstacle, robot, goal);
+			routeController.getInstruction(balls, obstacle, robot, goal);	
 	        
 			Imgproc.circle(matFrame, center, (int) obstacle.getDiameter()/2, new Scalar(255,255,255));			
 		}
+		System.out.println("area, crossarea, isready, run: " + areaLast + " " + crossArea + " " + routeController.isReady() + " " + run);
 		
 		if(areaLast > 0 && crossArea > 0) {
 			if(routeController.isReady() && run) {
@@ -513,15 +523,15 @@ public class CamController {
 		}
 		
 		if(obstacle != null) {
-			int x = (int) Math.round(obstacle.x/gridSizeHorizontal);
-			int y = (int) Math.round(obstacle.y/gridSizeVertical);
-			obstacle.setCoordinates(x, y);
+			//int x = (int) Math.round(obstacle.x/gridSizeHorizontal);
+			//int y = (int) Math.round(obstacle.y/gridSizeVertical);
+			//obstacle.setCoordinates(x, y);
 			
 			for (DTO.Point point : obstacle.getSquarePoints()) {
-				x = (int) Math.round(point.x/gridSizeHorizontal);
-				y = (int) Math.round(point.y/gridSizeVertical);
+				//x = (int) Math.round(point.x/gridSizeHorizontal);
+				//y = (int) Math.round(point.y/gridSizeVertical);
 				
-				point.setCoordinates(x, y);
+				//point.setCoordinates(x, y);
 			}
 		}
 		
@@ -529,7 +539,7 @@ public class CamController {
 			int x = (int) Math.round(goal.x/gridSizeHorizontal);
 			int y = (int) Math.round(goal.y/gridSizeVertical);
 			
-			goal.setCoordinates(x, y);
+			goal.setCoordinates(x-25, y-4);
 		}
 		
 		for(Ball ball : balls) {
@@ -555,6 +565,7 @@ public class CamController {
 		Mat matFrameCopy = matFrame.clone();
 		
 		robotMask = new Mat();
+		robot = null;
 		
 		triangles.clear();
 
