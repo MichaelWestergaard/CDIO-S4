@@ -80,6 +80,9 @@ public class MapController {
 			init();
 		}
 		
+		robotFound = false;
+		directionFound = false;
+		
 		int sameCounter = 0;
 		if(map != null) {
 			for (int x = 0; x < map.length; x++) { //r�kkerne
@@ -101,20 +104,26 @@ public class MapController {
 	private void primaryFunc() throws IOException{
 	    
 		findBalls();
-		findShortestPath();
+		instructionMap.clear();
 		
 		
-		
-    	if(coordinates.size() == 0) {
-    		//Find vej til mål
-		    System.out.println("no more balls");
-    	}
-		
+		if (!(robotFound && directionFound)) {
+			instructionMap.put("backwa0", 10.0);
+			System.out.println("robot or direction not found");
+		} else {
+			if (coordinates.size() == 0) {
+				// Find vej til mål
+				System.out.println("no more balls");
+			} else {
+				findShortestPath();
+			}
+		}
 	    String line = null;
-	    
+
+	    System.out.println(instructionMap);
 		mapOutputStream.writeObject(instructionMap);
 	    mapOutputStream.flush();
-	    
+	    mapOutputStream.reset();
 	    
 	    while(true) {
 	    	line = reader.readLine();
@@ -158,6 +167,9 @@ public class MapController {
 	
 	public void findBalls() {
 		coordinates.clear();
+		robot = null;
+		directionVector = null;
+		
 		//int ballcounter;
 		boolean ballStatus = false;
     

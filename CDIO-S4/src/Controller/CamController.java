@@ -90,7 +90,7 @@ public class CamController {
     private double minXVal, maxXVal, width, minYVal, maxYVal, height;
     private Mat perspectiveTransform;
     private double cameraHeight = 158;
-    int counter = 0 ;
+    int counter = 0, debugNumber = 0 ;
     
     private FrameHelper frameHelper = new FrameHelper();
     
@@ -106,7 +106,7 @@ public class CamController {
 		matFrame = new Mat();
 
 		if(useCam) {
-			videoCapture = new VideoCapture(0);
+			videoCapture = new VideoCapture(1);
 	        if (!videoCapture.isOpened()) {
 	            System.err.println("Cannot open camera");
 	            System.exit(0);
@@ -295,6 +295,7 @@ public class CamController {
 	}
 	
 	private void updateFrame() {
+		System.out.println("KOMMER TIL STARTEN AF UPDATE FRAME NR: " + debugNumber);
 		realImg = matFrame.clone();
 		Mat capturedFrame = matFrame.clone();
 		mask = new Mat();
@@ -480,14 +481,16 @@ public class CamController {
 			Imgproc.line(matFrame, new Point(robot.x, robot.y), new Point(directionPoint.x, directionPoint.y), new Scalar(0,0,255));
 		}
 		
-		
+		System.out.println("Arealast: " + areaLast + " crossArea: " + crossArea);
 		if(areaLast > 0 && crossArea > 0) {
+			System.out.println("ready: " + mapController.isReady() + " run: " + run);
 			if(mapController.isReady() && run) {
 				generateMap(realImg);
-				counter++;
 				if(getMap() != null)
 					try {
 						mapController.loadMap(getMap());
+						counter++;
+						System.out.println("generateMap counter: " + counter);
 					} catch (IOException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -502,9 +505,14 @@ public class CamController {
 
         if(firstFrame)
         	videoFrame.repaint();
+        debugNumber++;
 	}
 	
 	private void findRobot(Mat matFrame) {
+		
+		robot = null;
+		directionPoint = null;
+		
 		Mat matFrameCopy = matFrame.clone();
 		
 		robotMask = new Mat();
@@ -694,7 +702,7 @@ public class CamController {
 		}else {
 			returnPoint.setCoordinates(circleIntersectionNeg, yForNeg);
 		}
-		System.out.println("Point coordinates: " + returnPoint.x + " " + returnPoint.y);
+		//System.out.println("Point coordinates: " + returnPoint.x + " " + returnPoint.y);
 		return returnPoint;	
 		
 	}
@@ -798,30 +806,40 @@ public class CamController {
 		}
         
 		ArrayList<Ball> notFound = new ArrayList<Ball>();
+		if(robot != null) {
+			int botX = (int) Math.round(robot.x/gridSizeHorizontal);
+			int botY = (int) Math.round(robot.y/gridSizeVertical);
+			
+			System.out.println("Old robot: " + botX + " " + botY);
+			DTO.Point testPoint = new DTO.Point(botX, botY);
+			DTO.Point newRobot = new DTO.Point(0,0);
+			DTO.Point newDirection = new DTO.Point(0,0);
+			
+			newRobot = projectObject(testPoint, "robot");
+			System.out.println("newpoint: " + newRobot.x + " " + newRobot.y);
+			int directionX = (int) Math.round(directionPoint.x/gridSizeHorizontal);
+			int directionY = (int) Math.round(directionPoint.y/gridSizeVertical);
+			testPoint = new DTO.Point(directionX, directionY);
+			newDirection = projectObject(testPoint, "robot");
+			
+			
+			map[(int) newRobot.x][(int) newRobot.y] = 9;
+			map[(int) newDirection.x][(int) newDirection.y] = 3;
+		}
 		
-		int botX = (int) Math.round(robot.x/gridSizeHorizontal);
-		int botY = (int) Math.round(robot.y/gridSizeVertical);
-		
-		System.out.println("Old robot: " + botX + " " + botY);
-		DTO.Point testPoint = new DTO.Point(botX, botY);
-		DTO.Point newRobot = new DTO.Point(0,0);
-		DTO.Point newDirection = new DTO.Point(0,0);
-		
-		newRobot = projectObject(testPoint, "robot");
-		System.out.println("newpoint: " + newRobot.x + " " + newRobot.y);
-		int directionX = (int) Math.round(directionPoint.x/gridSizeHorizontal);
-		int directionY = (int) Math.round(directionPoint.y/gridSizeVertical);
-		testPoint = new DTO.Point(directionX, directionY);
-		newDirection = projectObject(testPoint, "robot");
-		
-		
-		map[(int) newRobot.x][(int) newRobot.y] = 9;
-		map[(int) newDirection.x][(int) newDirection.y] = 3;
 		
 		for(Ball ball : balls) {
 			int i = (int) Math.round(ball.x/gridSizeHorizontal);
 			int j = (int) Math.round(ball.y/gridSizeVertical);
+			/*System.out.println("i: " + i + " j: " + j);
+			DTO.Point newBall = new DTO.Point(0,0);
+			testPoint = new DTO.Point(i, j);
+			newBall = projectObject(testPoint, "ball");
 			
+			System.out.println("projected ball: " + newBall.x + " " + newBall.y);
+			i = (int) newBall.x;
+			j = (int) newBall.y;
+			System.out.println("after i: " + i + " j: " + j);*/
 			if(i < 3) {
 				i = 3;
 			}
@@ -922,7 +940,7 @@ public class CamController {
             Mat imgCapture = frames.get(frames.size() - 1);
             matFrame = imgCapture;
 
-            
+            System.out.println("Kalder update frame fra CaptureTask");
             //Findwalls etc her
             updateFrame();
             //findWalls();
