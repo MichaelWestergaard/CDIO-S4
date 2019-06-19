@@ -479,7 +479,7 @@ public class CamController {
 		
 		if(areaLast > 0 && crossArea > 0) {
 			if(routeController.isReady() && run) {
-				//routeController.sendInstructions();
+				routeController.sendInstructions();
 			}
 		}
 		
