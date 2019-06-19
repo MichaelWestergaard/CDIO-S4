@@ -3,15 +3,15 @@
     <lowHueBalls>0</lowHueBalls>
     <lowHueWalls>0</lowHueWalls>
     <lowSatBalls>192</lowSatBalls>
-    <lowSatWalls>78</lowSatWalls>
+    <lowSatWalls>0</lowSatWalls>
     <lowValBalls>255</lowValBalls>
-    <lowValWalls>81</lowValWalls>
-    <maxBallSize>20</maxBallSize>
+    <lowValWalls>148</lowValWalls>
+    <maxBallSize>3</maxBallSize>
     <maxHueBalls>232</maxHueBalls>
     <maxHueWalls>255</maxHueWalls>
     <maxSatBalls>80</maxSatBalls>
-    <maxSatWalls>195</maxSatWalls>
+    <maxSatWalls>255</maxSatWalls>
     <maxValBalls>255</maxValBalls>
-    <maxValWalls>206</maxValWalls>
-    <minBallSize>4</minBallSize>
+    <maxValWalls>197</maxValWalls>
+    <minBallSize>2</minBallSize>
 </camera>

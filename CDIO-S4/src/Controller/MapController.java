@@ -155,6 +155,7 @@ public class MapController {
 				}
 
 				if(map[x][y] == 5) {
+					
 					smallGoal = new Goal(x,y);
 					/*else if (map[x+15][y] == 5) {
 						bigGoal = new Goal(x,y);

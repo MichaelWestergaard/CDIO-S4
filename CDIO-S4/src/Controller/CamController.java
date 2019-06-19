@@ -468,11 +468,11 @@ public class CamController {
 	        obstacle.setSquarePoints(squarePoints);	        
 
 	        robot.setDirectionVector(new Direction(directionPoint.x, directionPoint.y));
-	        Goal testGoal = new Goal(5,1);
-	        fixCoordinates(balls, obstacle, robot, testGoal);
+	        Goal goal = new Goal(matFrame.width()-5,matFrame.height()/2);
+	        fixCoordinates(balls, obstacle, robot, goal);
 
 	        System.out.println("Getting instructions");
-			routeController.getInstruction(balls, obstacle, robot, testGoal);
+			routeController.getInstruction(balls, obstacle, robot, goal);
 	        
 			Imgproc.circle(matFrame, center, (int) obstacle.getDiameter()/2, new Scalar(255,255,255));			
 		}
