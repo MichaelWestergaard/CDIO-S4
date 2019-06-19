@@ -74,6 +74,7 @@ public class RouteController {
 		System.out.println("robot = " + robot);		
 		System.out.println("Direction = " + robot.getDirectionVector());
 		
+		//Fjern loop hvis den kun skal køre efter én bold
 		while(i < iterator) {
 			Collections.sort(balls, new Sort());
 			

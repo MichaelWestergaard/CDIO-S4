@@ -409,6 +409,27 @@ public class CamController {
 	        Obstacles obstacle = new Obstacles(center.x, center.y);
 	        obstacle.setDiameter((diameter*2));
 	        
+	        
+	        // Lav firkant rundt om cirkel
+	        
+	        // Find vinkel mellem toppunkt og x, y-radius vector
+	        Point topL = null;
+	        
+            //Skal måske ændres lidt
+	        /*
+	        for(Point point : contoursWalls.get(crossI).toList()) {
+	        	if(topL == null) {
+	        		topL = point;
+	        	} else {
+	        		if(point.y < topL.y) {
+	        			topL = point;
+	        		}
+	        	}
+	        }
+	        */
+	        
+	        Imgproc.circle(matFrame, topL, 3, new Scalar(0,255, 0), Imgproc.FILLED);
+	        
 	        List<DTO.Point> squarePoints = new ArrayList<DTO.Point>();
 	        //Index0 = øverst venstre, index1 = øverst højre, index2 = nederst venstre, index3 = nederst højre
 	        squarePoints.add(new DTO.Point((center.x - (obstacle.getDiameter()/2)), (center.y - (obstacle.getDiameter()/2))));
@@ -427,8 +448,8 @@ public class CamController {
 	        System.out.println("Getting instructions");
 	        
 	        robot.setDirectionVector(new Direction(directionPoint.x, directionPoint.y));
-			new RouteController().getInstruction(balls, obstacle, robot, new Goal(5,1));
 			routeController.getInstruction(balls, obstacle, robot, new Goal(5,1));
+			routeController.sendInstructions();
 	        
 			Imgproc.circle(matFrame, center, (int) obstacle.getDiameter()/2, new Scalar(255,255,255));			
 		}
