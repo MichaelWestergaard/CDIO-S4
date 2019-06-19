@@ -341,7 +341,7 @@ public class CamController {
 			
 			if(approxCurve.total() == 4) {
 				RotatedRect rect = Imgproc.minAreaRect(new MatOfPoint2f(contoursWalls.get(i).toArray()));
-				Point[] vertices = new Point[4];  
+				Point[] vertices = new Point[4];
 		        rect.points(vertices);
 		        
 				double area = rect.size.width * rect.size.height;
@@ -440,7 +440,7 @@ public class CamController {
 	        robot.setDirectionVector(new Direction(directionPoint.x, directionPoint.y));
 			new RouteController().getInstruction(balls, obstacle, robot, new Goal(5,1));
 	        
-			Imgproc.circle(matFrame, center, (int) obstacle.getDiameter(), new Scalar(255,255,255));			
+			Imgproc.circle(matFrame, center, (int) obstacle.getDiameter()/2, new Scalar(255,255,255));			
 		}
 		
 		if(areaLast > 0 && crossArea > 0) {

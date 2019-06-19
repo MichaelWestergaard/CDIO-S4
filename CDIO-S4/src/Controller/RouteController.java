@@ -1,5 +1,12 @@
 package Controller;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -23,18 +30,41 @@ public class RouteController {
 	Obstacles obstacle;
 	Goal goal;
 	Robot robot;
-	
 
-	int[][] directions = { { 0, 1 }, { 1, 0 }, { 0, -1 }, { -1, 0 } };
-	int xSize;
-	int ySize;
+
+	private boolean ready = true;
+	private boolean isConnected = false;
+	BufferedReader reader;
+	ObjectOutputStream mapOutputStream;
+	OutputStream outputStream;
 	
-	List<Point> visitedCoordinates = new ArrayList<Point>();
+	Socket socket;
+	String readline;
+	Map<String, Double> myMap = new HashMap<String, Double>();
+	boolean moreBalls = true;
+		
+	public void socketInit() {
+		try {
+			socket = new Socket("192.168.43.31", 3005);		
+			socket.setKeepAlive(true);
+			socket.setSoTimeout(0);
+			isConnected = true;
+			outputStream = socket.getOutputStream();
+			mapOutputStream = new ObjectOutputStream(outputStream);
+			reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 	
-	boolean routeFound = false;
-	boolean alternativeRouteFound = false;
+	//TODO: ROTATE SQUARE POINTS + INSTRUCTIONS TIL GOAL
 
 	public Map<String, Double> getInstruction(List<Ball> balls, Obstacles obstacle, Robot robot, Goal goal){
+		if(!isConnected) {
+			socketInit();
+		}
 		
 		instructions = new HashMap<String, Double>();
 		this.obstacle = obstacle;
@@ -67,6 +97,32 @@ public class RouteController {
 		return instructions;
 	}
 	
+	private void sendInstructions(Map<String, Double> instructions) {
+		String line = null;
+	    
+		ready = false;
+		
+		try {
+			mapOutputStream.writeObject(instructions);
+		    mapOutputStream.flush();
+		    
+		    while(true) {
+		    	line = reader.readLine();
+		    	System.out.println(instructions);
+		    	System.out.println(line);
+		    	
+		    	if(line.equals("next")) {
+		    		ready = true;
+		    		System.out.println("Thank u , next ");
+		    		break;
+		    	}   
+		    }
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
 	private boolean getRoute(Ball ball) {
 		boolean crossBlocking = false;
 
@@ -81,32 +137,14 @@ public class RouteController {
 		if(!crossBlocking) {
 			addInstruction("rotate", robot.angleBetween(robot.getDirectionVector(), ball));
 			addInstruction("travel", robot.dist(ball));
-			
-			Point newDirectionCoordinates = rotateDirection(ball, true);
 
 			// Set new robot coordinates and new direction
+			robot.getDirectionVector().setCoordinates((ball.x * 2) - robot.x, (ball.y * 2) - robot.y);
 			robot.setCoordinates(ball.x, ball.y);
-			robot.getDirectionVector().setCoordinates(newDirectionCoordinates.x, newDirectionCoordinates.y);
 			return true;
 		} else {
 			System.out.println("Direct way is blocked, need to find an alternative route");	
-			
-			/*
-			Point closestIntersectionPoint = null;
-			
-			double minDist = Integer.MAX_VALUE;
-			
-			for (Point point : intersectionPoints) {
-				double tempDist = point.dist(ball);
-				if(tempDist < minDist) {
-					closestIntersectionPoint = point;
-					minDist = tempDist;
-				}
-			}
-			
-			System.out.println("Need to go to " + closestIntersectionPoint.x + ", " + closestIntersectionPoint.y + " and then rotate and travel to " + ball);
-			*/
-			
+						
 			Point finalDestination = null;
 			double distance = Double.MAX_VALUE;
 			
@@ -185,54 +223,8 @@ public class RouteController {
 		operationNum++;
 	}
 	
-	private Point rotateDirection(Point ballPoint, boolean findLongestDist) {		
-		Point returnPoint = new Point(0,0);
-		
-		double xDiff = Math.abs(robot.getDirectionVector().x - robot.x);
-		double yDiff = Math.abs(robot.getDirectionVector().y - robot.y);
-		
-		double realRadius = Math.sqrt(xDiff*xDiff + yDiff*yDiff);
-		
-		double slope = (ballPoint.y - robot.y)/(ballPoint.x - robot.x);
-		double intersect = robot.y - slope * robot.x;
-		
-		double firstEquationPart = slope*slope + 1;
-		double secondEquationPart = 2*slope*(intersect-robot.y)-(2 * robot.x);
-		double thirdEquationPart = (intersect-robot.y)*(intersect-robot.y) - realRadius*realRadius + robot.x*robot.x;
-		
-		double circleIntersectionPos = (0-secondEquationPart + (Math.sqrt((secondEquationPart * secondEquationPart - 4*firstEquationPart*thirdEquationPart))))/(2*firstEquationPart);
-		double circleIntersectionNeg = (0-secondEquationPart - Math.sqrt(Math.pow(secondEquationPart, 2) - 4*firstEquationPart*thirdEquationPart))/(2*firstEquationPart);
-		
-		double yForPos = slope * circleIntersectionPos + intersect;
-		double yForNeg = slope * circleIntersectionNeg + intersect;
-		
-		Point pPos = new Point(circleIntersectionPos, yForPos);
-		Point pNeg = new Point(circleIntersectionNeg, yForNeg);
-		
-		double distToPPos = ballPoint.dist(pPos);
-		double distToPNeg = ballPoint.dist(pNeg);
-		
-		if(findLongestDist) {
-			if(distToPNeg < distToPPos) {
-				returnPoint.setCoordinates(circleIntersectionPos, yForPos);
-				
-			}else {
-				returnPoint.setCoordinates(circleIntersectionNeg, yForNeg);
-			}
-		} else {
-			if(distToPNeg > distToPPos) {
-				returnPoint.setCoordinates(circleIntersectionPos, yForPos);
-				
-			}else {
-				returnPoint.setCoordinates(circleIntersectionNeg, yForNeg);
-			}
-		}
-		
-		return returnPoint;
-	}
-	
-	private boolean inLine(Point a, Point b, Point c) {
-		return (a.x * (b.y - c.y) + b.x * (c.y - a.y) + c.x * (a.y - b.y) == 0) ? true : false;
+	public boolean isReady() {
+		return ready;
 	}
 	
 	class Sort implements Comparator<Point>{
