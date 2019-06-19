@@ -35,7 +35,6 @@ public class RouteController {
 	
 	Socket socket;
 	String readline;
-	Map<String, Double> myMap = new HashMap<String, Double>();
 	boolean moreBalls = true;
 		
 	public void socketInit() {
@@ -54,7 +53,7 @@ public class RouteController {
 		}
 	}
 	
-	//TODO: ROTATE SQUARE POINTS + INSTRUCTIONS TIL GOAL
+	//TODO: ROTATE SQUARE POINTS
 
 	public Map<String, Double> getInstruction(List<Ball> balls, Obstacles obstacle, Robot robot, Goal goal){
 		
@@ -67,7 +66,7 @@ public class RouteController {
 				
 		int iterator = balls.size();
 		int i = 0;
-			
+		
 		System.out.println("Balls = " + balls);
 		System.out.println("Obstacle = " + obstacle);
 		System.out.println("Diameter = " + obstacle.getDiameter());
@@ -87,6 +86,94 @@ public class RouteController {
 		
 		System.out.println("" + instructions);
 		return instructions;
+	}
+	
+	private void instructionsToGoal() {
+		instructions = new HashMap<String, Double>();
+		
+		boolean crossBlocking = false;
+		
+		List<Point> intersectionPoints = obstacle.getCircleLineIntersectionPoint(robot, goal);
+
+		if(!intersectionPoints.isEmpty()) {
+			crossBlocking = true;
+		}
+		
+		if(!crossBlocking) {
+			addInstruction("rotate", robot.angleBetween(robot.getDirectionVector(), goal));
+			addInstruction("travel", robot.dist(goal));
+
+			// Set new robot coordinates and new direction
+			robot.getDirectionVector().setCoordinates((goal.x * 2) - robot.x, (goal.y * 2) - robot.y);
+			robot.setCoordinates(goal.x, goal.y);
+		} else {
+			System.out.println("Direct way is blocked, need to find an alternative route");	
+			
+			Point finalDestination = null;
+			double distance = Double.MAX_VALUE;
+			
+			Point firstDestination = null;
+			double distanceToRobot = Double.MAX_VALUE;
+			
+			for(Point point : obstacle.getSquarePoints()) {
+				if(point.dist(goal) < distance) {
+					finalDestination = point;
+					distance = point.dist(goal);
+				}
+				
+				if(point.dist(robot) < distanceToRobot) {
+					firstDestination = point;
+					distanceToRobot = point.dist(robot);
+				}
+			}
+			
+			addInstruction("rotate", robot.angleBetween(robot.getDirectionVector(), firstDestination));
+			addInstruction("travel", distanceToRobot);
+			
+			robot.getDirectionVector().setCoordinates((firstDestination.x * 2) - robot.x, (firstDestination.y * 2) - robot.y);
+			robot.setCoordinates(firstDestination.x, firstDestination.y);
+			
+			Point currentPoint = firstDestination;
+			
+			System.out.println("firstDestination " + firstDestination);
+			
+			while(!currentPoint.equals(finalDestination)) {
+				int index = obstacle.getSquarePoints().indexOf(currentPoint);
+				
+				switch(index) {
+					case 0:
+						currentPoint = obstacle.getSquarePoints().get(1);
+						break;
+					case 1:
+						currentPoint = obstacle.getSquarePoints().get(3);
+						break;
+					case 2:
+						currentPoint = obstacle.getSquarePoints().get(0);
+						break;
+					case 3:
+						currentPoint = obstacle.getSquarePoints().get(2);
+						break;
+				}
+				
+				addInstruction("rotate", robot.angleBetween(robot.getDirectionVector(), currentPoint));
+				addInstruction("travel", obstacle.getDiameter());
+				
+				robot.getDirectionVector().setCoordinates((currentPoint.x * 2) - robot.x, (currentPoint.y * 2) - robot.y);
+				robot.setCoordinates(currentPoint.x, currentPoint.y);
+				
+				System.out.println("currentPoint = " + currentPoint);
+			}
+			System.out.println("finalDestination = " + finalDestination);
+			
+			addInstruction("rotate", robot.angleBetween(robot.getDirectionVector(), goal));
+			addInstruction("travel", robot.dist(goal));
+			
+			robot.getDirectionVector().setCoordinates((goal.x * 2) - robot.x, (goal.y * 2) - robot.y);
+			
+			System.out.println("NewRobot =" + robot);
+		}
+		
+		sendInstructions();
 	}
 	
 	public void sendInstructions() {
