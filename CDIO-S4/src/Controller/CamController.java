@@ -448,7 +448,7 @@ public class CamController {
 	        System.out.println("Getting instructions");
 	        
 	        robot.setDirectionVector(new Direction(directionPoint.x, directionPoint.y));
-			routeController.getInstruction(balls, obstacle, robot, new Goal(5,1));
+			routeController.getInstruction(balls, obstacle, robot, new Goal(matFrame.width()-5,matFrame.height()/2));
 			routeController.sendInstructions();
 	        
 			Imgproc.circle(matFrame, center, (int) obstacle.getDiameter()/2, new Scalar(255,255,255));			

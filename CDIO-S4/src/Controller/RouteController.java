@@ -32,6 +32,7 @@ public class RouteController {
 	BufferedReader reader;
 	ObjectOutputStream mapOutputStream;
 	OutputStream outputStream;
+	private Point goalPointHelper;
 	
 	Socket socket;
 	String readline;
@@ -61,6 +62,8 @@ public class RouteController {
 		this.obstacle = obstacle;
 		this.goal = goal;
 		this.robot = robot;
+		
+		goalPointHelper = new Point(goal.x-20,goal.y);
 		
 		Collections.sort(balls, new Sort());
 				
@@ -94,19 +97,22 @@ public class RouteController {
 		
 		boolean crossBlocking = false;
 		
-		List<Point> intersectionPoints = obstacle.getCircleLineIntersectionPoint(robot, goal);
+		List<Point> intersectionPoints = obstacle.getCircleLineIntersectionPoint(robot, goalPointHelper);
 
 		if(!intersectionPoints.isEmpty()) {
 			crossBlocking = true;
 		}
 		
 		if(!crossBlocking) {
+			addInstruction("rotate", robot.angleBetween(robot.getDirectionVector(), goalPointHelper));
+			addInstruction("travel", robot.dist(goalPointHelper));
+			
+			// Set new robot coordinates and new direction
+			robot.getDirectionVector().setCoordinates((goalPointHelper.x * 2) - robot.x, (goalPointHelper.y * 2) - robot.y);
+			robot.setCoordinates(goalPointHelper.x, goalPointHelper.y);
+			
 			addInstruction("rotate", robot.angleBetween(robot.getDirectionVector(), goal));
 			addInstruction("travel", robot.dist(goal));
-
-			// Set new robot coordinates and new direction
-			robot.getDirectionVector().setCoordinates((goal.x * 2) - robot.x, (goal.y * 2) - robot.y);
-			robot.setCoordinates(goal.x, goal.y);
 		} else {
 			System.out.println("Direct way is blocked, need to find an alternative route");	
 			
@@ -117,9 +123,9 @@ public class RouteController {
 			double distanceToRobot = Double.MAX_VALUE;
 			
 			for(Point point : obstacle.getSquarePoints()) {
-				if(point.dist(goal) < distance) {
+				if(point.dist(goalPointHelper) < distance) {
 					finalDestination = point;
-					distance = point.dist(goal);
+					distance = point.dist(goalPointHelper);
 				}
 				
 				if(point.dist(robot) < distanceToRobot) {
@@ -166,10 +172,17 @@ public class RouteController {
 			}
 			System.out.println("finalDestination = " + finalDestination);
 			
+			addInstruction("rotate", robot.angleBetween(robot.getDirectionVector(), goalPointHelper));
+			addInstruction("travel", robot.dist(goalPointHelper));
+			
+			robot.getDirectionVector().setCoordinates((goalPointHelper.x * 2) - robot.x, (goalPointHelper.y * 2) - robot.y);
+			robot.setCoordinates(goalPointHelper.x, goalPointHelper.y);
+			
 			addInstruction("rotate", robot.angleBetween(robot.getDirectionVector(), goal));
 			addInstruction("travel", robot.dist(goal));
 			
 			robot.getDirectionVector().setCoordinates((goal.x * 2) - robot.x, (goal.y * 2) - robot.y);
+			robot.setCoordinates(goal.x, goal.y);			
 			
 			System.out.println("NewRobot =" + robot);
 		}
