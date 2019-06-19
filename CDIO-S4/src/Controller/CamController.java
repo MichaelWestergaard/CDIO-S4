@@ -87,7 +87,7 @@ public class CamController {
     
     private FrameHelper frameHelper = new FrameHelper();
     
-    String imagePath = "Images/crossFindBalls1.jpg";
+    String imagePath = "Images/croosNotBlocking.jpg";
     
     DTO.Point directionPoint;
     Robot robot;
@@ -317,9 +317,6 @@ public class CamController {
 		Imgproc.findContours(edges, contoursWalls, new Mat(), Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_NONE);
 
 		double areaLast = 0;
-		double crossArea = 0.0;
-		int crossI = -1;
-		MatOfPoint crossContour = null;
 		Point[] verticesLast = null;
 		RotatedRect rectLast = null;
 		
@@ -340,14 +337,6 @@ public class CamController {
 			        rectLast = rect;
 					areaLast = area;
 				}
-			}else {
-				double crossAreaLocal = Imgproc.contourArea(approxCurve);
-				if(crossAreaLocal > crossArea && crossAreaLocal >= (int)frameHelper.minCrossArea.getValue() && crossAreaLocal <= (int)frameHelper.maxCrossArea.getValue()) {
-					crossArea = crossAreaLocal;
-					crossI = i;
-					crossContour = contoursWalls.get(i);
-				}
-				
 			}
 		}
 		
@@ -369,9 +358,9 @@ public class CamController {
 		    Imgproc.warpPerspective(matFrame, matFrame, perspectiveTransform, new Size(rectLast.size.height, rectLast.size.width));
 		    */
 			//undistortImage();
-			//warpImage(verticesLast);
+			warpImage(verticesLast);
 		}
-
+		
 		//undistortImage();
 		//warpImage();
 		
@@ -385,29 +374,68 @@ public class CamController {
 			Imgproc.line(matFrame, new Point(robot.x, robot.y), new Point(directionPoint.x, directionPoint.y), new Scalar(0,0,255));
 		}
 		
+		// Efter warpimage skal vi finde cross igen
+				
+		Mat capturedFrameCross = matFrame.clone();
+		mask = new Mat();
+		edges = new Mat();
+		
+		Imgproc.blur(capturedFrameCross, capturedFrameCross, new Size(7,7));
+		
+		Imgproc.cvtColor(capturedFrameCross, mask, Imgproc.COLOR_BGR2HSV);
+		
+		//Imgproc.adaptiveThreshold(mask, threshold, 255, Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C, Imgproc.THRESH_BINARY, 11, 2);
+
+		inRange = new Mat();
+		
+        Core.inRange(mask, lower, upper, inRange);
+
+		Imgproc.Canny(inRange, edges, lowThresh, lowThresh*3, 3, true);
+		
+		List<MatOfPoint> contoursCross = new ArrayList<MatOfPoint>();
+
+		Imgproc.findContours(edges, contoursCross, new Mat(), Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_NONE);
+		
+		double crossArea = 0.0;
+		int crossI = -1;
+		for (int i = 0; i < contoursCross.size(); i++) {
+
+			MatOfPoint2f temp = new MatOfPoint2f(contoursCross.get(i).toArray());
+			MatOfPoint2f approxCurve = new MatOfPoint2f();
+			Imgproc.approxPolyDP(temp, approxCurve, Imgproc.arcLength(temp, true) * 0.004, true);
+			
+			double crossAreaLocal = Imgproc.contourArea(approxCurve);
+			if(crossAreaLocal > crossArea && crossAreaLocal >= (int)frameHelper.minCrossArea.getValue() && crossAreaLocal <= (int)frameHelper.maxCrossArea.getValue()) {
+				crossArea = crossAreaLocal;
+				crossI = i;
+			}
+		}
+		
 		if(crossI > 0) {
 			float[] radius = new float[1];
 			Point center = new Point();
-			Imgproc.minEnclosingCircle(new MatOfPoint2f(contoursWalls.get(crossI).toArray()), center, radius);
+			Imgproc.minEnclosingCircle(new MatOfPoint2f(contoursCross.get(crossI).toArray()), center, radius);
 
-			RotatedRect rect = Imgproc.minAreaRect(new MatOfPoint2f(contoursWalls.get(crossI).toArray()));
+			RotatedRect rect = Imgproc.minAreaRect(new MatOfPoint2f(contoursCross.get(crossI).toArray()));
 			Point[] vertices = new Point[4];  
 	        rect.points(vertices);
 			
 	        double diameter = 0.0;
-	        
+	        double gridSizeHorizontal = matFrame.width()/180;
+			double gridSizeVertical = matFrame.height()/120;
 	        if(vertices != null) {
 				for(int i = 0; i < 4; i++) {
-					for(int j = 0; j < 4; j++) {
-						double dist = Math.abs(Math.sqrt(Math.pow(vertices[j].x - vertices[i].x, 2) + Math.pow(vertices[j].y - vertices[i].y, 2)));
+					for(int j = 0; j < 4; j++) {						
+						double dist = Math.abs(Math.sqrt(Math.pow((vertices[j].x/gridSizeHorizontal) - (vertices[i].x/gridSizeHorizontal), 2) + Math.pow((vertices[j].y/gridSizeVertical) - (vertices[i].y/gridSizeHorizontal), 2)));
 						
 						if(dist > diameter)
 							diameter = dist;
 					}
 				}
 	        }
+	        
 	        Obstacles obstacle = new Obstacles(center.x, center.y);
-	        obstacle.setDiameter((diameter*2));
+	        obstacle.setDiameter(diameter*2);
 	        
 	        
 	        // Lav firkant rundt om cirkel
@@ -428,7 +456,7 @@ public class CamController {
 	        }
 	        */
 	        
-	        Imgproc.circle(matFrame, topL, 3, new Scalar(0,255, 0), Imgproc.FILLED);
+	        //Imgproc.circle(matFrame, topL, 3, new Scalar(0,255, 0), Imgproc.FILLED);
 	        
 	        List<DTO.Point> squarePoints = new ArrayList<DTO.Point>();
 	        //Index0 = øverst venstre, index1 = øverst højre, index2 = nederst venstre, index3 = nederst højre
@@ -437,26 +465,21 @@ public class CamController {
 	        squarePoints.add(new DTO.Point(squarePoints.get(0).x, squarePoints.get(0).y + obstacle.getDiameter()));
 	        squarePoints.add(new DTO.Point(squarePoints.get(0).x + obstacle.getDiameter(), squarePoints.get(0).y + obstacle.getDiameter()));
 	        
-	        obstacle.setSquarePoints(squarePoints);
-	        /*
-	        Imgproc.circle(matFrame, squarePoints.get(0), 2, new Scalar(250, 250, 250));
-	        Imgproc.circle(matFrame, squarePoints.get(1), 2, new Scalar(250, 250, 250));
-	        Imgproc.circle(matFrame, squarePoints.get(2), 2, new Scalar(250, 250, 250));
-	        Imgproc.circle(matFrame, squarePoints.get(3), 2, new Scalar(250, 250, 250));
-	        */
-	        
-	        System.out.println("Getting instructions");
-	        
+	        obstacle.setSquarePoints(squarePoints);	        
+
 	        robot.setDirectionVector(new Direction(directionPoint.x, directionPoint.y));
-			routeController.getInstruction(balls, obstacle, robot, new Goal(5,1));
-			routeController.sendInstructions();
+	        Goal testGoal = new Goal(5,1);
+	        fixCoordinates(balls, obstacle, robot, testGoal);
+
+	        System.out.println("Getting instructions");
+			routeController.getInstruction(balls, obstacle, robot, testGoal);
 	        
 			Imgproc.circle(matFrame, center, (int) obstacle.getDiameter()/2, new Scalar(255,255,255));			
 		}
 		
 		if(areaLast > 0 && crossArea > 0) {
 			if(routeController.isReady() && run) {
-				routeController.sendInstructions();
+				//routeController.sendInstructions();
 			}
 		}
 		
@@ -467,7 +490,66 @@ public class CamController {
         	videoFrame.repaint();
 	}
 	
-	
+	private void fixCoordinates(List<Ball> balls, Obstacles obstacle, Robot robot, Goal goal) {
+		double gridSizeHorizontal = matFrame.width()/180;
+		double gridSizeVertical = matFrame.height()/120;
+		
+		if(robot != null) {
+			int botX = (int) Math.round(robot.x/gridSizeHorizontal);
+			int botY = (int) Math.round(robot.y/gridSizeVertical);
+			
+			DTO.Point testPoint = new DTO.Point(botX, botY);
+			DTO.Point newRobot = new DTO.Point(0,0);
+			DTO.Point newDirection = new DTO.Point(0,0);
+			
+			newRobot = projectObject(testPoint, "robot");
+			int directionX = (int) Math.round(directionPoint.x/gridSizeHorizontal);
+			int directionY = (int) Math.round(directionPoint.y/gridSizeVertical);
+			testPoint = new DTO.Point(directionX, directionY);
+			newDirection = projectObject(testPoint, "robot");
+			
+			robot.setCoordinates(newRobot.x, newRobot.y);
+			robot.getDirectionVector().setCoordinates(newDirection.x,newDirection.y);
+		}
+		
+		if(obstacle != null) {
+			int x = (int) Math.round(obstacle.x/gridSizeHorizontal);
+			int y = (int) Math.round(obstacle.y/gridSizeVertical);
+			obstacle.setCoordinates(x, y);
+			
+			for (DTO.Point point : obstacle.getSquarePoints()) {
+				x = (int) Math.round(point.x/gridSizeHorizontal);
+				y = (int) Math.round(point.y/gridSizeVertical);
+				
+				point.setCoordinates(x, y);
+			}
+		}
+		
+		if(goal != null) {
+			int x = (int) Math.round(goal.x/gridSizeHorizontal);
+			int y = (int) Math.round(goal.y/gridSizeVertical);
+			
+			goal.setCoordinates(x, y);
+		}
+		
+		for(Ball ball : balls) {
+			int x = (int) Math.round(ball.x/gridSizeHorizontal);
+			int y = (int) Math.round(ball.y/gridSizeVertical);
+			if(x < 3) {
+				x = 3;
+			}
+			if(x > 179) {
+				x = 179;
+			}
+			if(y < 2) {
+				y = 2;
+			}
+			if(y > 118) {
+				y = 118;
+			}
+			ball.setCoordinates(x, y);
+		}
+	}
 	
 	private void findRobot(Mat matFrame) {
 		Mat matFrameCopy = matFrame.clone();
@@ -745,95 +827,6 @@ public class CamController {
 		
 	}
 	
-	
-	public int[][] getMap(){
-		return map;
-	}
-	
-	private void generateMap(Mat img) {
-		double gridSizeHorizontal = img.width()/180;
-        double gridSizeVertical = img.height()/120;
-        
-        map = new int[180][120];
-        
-        for (int i = 0; i < 180; i++) {
-			for (int j = 0; j < 120; j++) {
-				map[i][j] = 0;
-			}
-		}
-        
-		ArrayList<Ball> notFound = new ArrayList<Ball>();
-		
-		int botX = (int) Math.round(robot.x/gridSizeHorizontal);
-		int botY = (int) Math.round(robot.y/gridSizeVertical);
-		
-		System.out.println("Old robot: " + botX + " " + botY);
-		DTO.Point testPoint = new DTO.Point(botX, botY);
-		DTO.Point newRobot = new DTO.Point(0,0);
-		DTO.Point newDirection = new DTO.Point(0,0);
-		
-		newRobot = projectObject(testPoint, "robot");
-		System.out.println("newpoint: " + newRobot.x + " " + newRobot.y);
-		int directionX = (int) Math.round(directionPoint.x/gridSizeHorizontal);
-		int directionY = (int) Math.round(directionPoint.y/gridSizeVertical);
-		testPoint = new DTO.Point(directionX, directionY);
-		newDirection = projectObject(testPoint, "robot");
-		
-		
-		map[(int) newRobot.x][(int) newRobot.y] = 9;
-		map[(int) newDirection.x][(int) newDirection.y] = 3;
-		
-		for(Ball ball : balls) {
-			int i = (int) Math.round(ball.x/gridSizeHorizontal);
-			int j = (int) Math.round(ball.y/gridSizeVertical);
-			
-			if(i < 3) {
-				i = 3;
-			}
-			if(i > 179) {
-				i = 179;
-			}
-			if(j < 2) {
-				j = 2;
-			}
-			if(j > 118) {
-				j = 118;
-			}
-			map[i-3][j-2] = 1;
-			map[i-3][j-1] = 1;
-			map[i-3][j] = 1;
-			map[i-3][j+1] = 1;
-			
-			map[i-2][j-2] = 1;
-			map[i-2][j-1] = 1;
-			map[i-2][j] = 1;
-			map[i-2][j+1] = 1;
-			
-			map[i-1][j-2] = 1;
-			map[i-1][j-1] = 1;
-			map[i-1][j] = 1;
-			map[i-1][j+1] = 1;
-			
-			map[i][j-2] = 1;
-			map[i][j-1] = 1;
-			map[i][j] = 1;
-			map[i][j+1] = 1;
-
-		}
-		for(Ball ball : notFound) {
-			System.out.println("i: " + ball.x/gridSizeHorizontal + " y: " + ball.y/gridSizeVertical);
-		}
-		
-		int counter = 0;
-		for(int i = 0; i < 180; i++) {
-			for(int j = 0; j < 120; j++) {
-				if(map[i][j] == 1) {
-					counter++;
-				}
-			}
-		}
-	}
-	
 	private static void showImage(Mat mat) {
 		JFrame f = new JFrame();
 		f.setTitle(mat + "");
@@ -900,113 +893,6 @@ public class CamController {
             
         }
     }
-	
-	private Point[] findCorners() {
-		Mat capturedFrame = matFrame.clone();
-		Mat mask = new Mat();
-		Mat edges = new Mat();
-		
-		Imgproc.blur(capturedFrame, capturedFrame, new Size(7,7));
-		
-		Imgproc.cvtColor(capturedFrame, mask, Imgproc.COLOR_BGR2HSV);
-		
-		//Imgproc.adaptiveThreshold(mask, threshold, 255, Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C, Imgproc.THRESH_BINARY, 11, 2);
-
-		Mat inRange = new Mat();
-		
-		Scalar lower = new Scalar(cameraSettings.getLowHueWalls(), cameraSettings.getLowSatWalls(), cameraSettings.getLowValWalls());
-	    Scalar upper = new Scalar(cameraSettings.getMaxHueWalls(), cameraSettings.getMaxSatWalls(), cameraSettings.getMaxValWalls());
-	    
-        Core.inRange(mask, lower, upper, inRange);
-                
-        int lowThresh = 90;
-
-		Imgproc.Canny(inRange, edges, lowThresh, lowThresh*3, 3, true);
-		
-
-		List<MatOfPoint> contoursWalls = new ArrayList<MatOfPoint>();
-
-		Imgproc.findContours(edges, contoursWalls, new Mat(), Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_NONE);
-
-		double areaLast = 0;
-		Point[] verticesLast = null;
-		RotatedRect rectLast = null;
-		
-		for (int i = 0; i < contoursWalls.size(); i++) {
-			MatOfPoint2f temp = new MatOfPoint2f(contoursWalls.get(i).toArray());
-			MatOfPoint2f approxCurve = new MatOfPoint2f();
-			Imgproc.approxPolyDP(temp, approxCurve, Imgproc.arcLength(temp, true) * 0.004, true);
-			
-			if(approxCurve.total() == 4) {
-				RotatedRect rect = Imgproc.minAreaRect(new MatOfPoint2f(contoursWalls.get(i).toArray()));
-				Point[] vertices = new Point[4];  
-		        rect.points(vertices);
-		        
-				double area = rect.size.width * rect.size.height;
-				
-				if(area > areaLast) {
-		        	verticesLast = vertices;
-			        rectLast = rect;
-					areaLast = area;
-				}
-			}
-		}
-		
-		if(verticesLast != null && rectLast != null) {
-			return verticesLast;
-		}
-		System.out.println("Sender ikke hjørner");
-		return null;
-	}
-	
-	/*private Point[] findCornersOld() {
-		Mat dst = new Mat();
-		Mat edges = new Mat();
-		List<MatOfPoint> contoursWalls = new ArrayList<MatOfPoint>();
-		
-		Imgproc.GaussianBlur(img, dst, new Size(3,3), 0);
-		
-		Mat element = Imgproc.getStructuringElement(Imgproc.CV_SHAPE_RECT, new Size(2 * 8 + 1, 2 * 8 + 1), new Point(8, 8));
-		
-		int lowThresh = 90;
-
-		Imgproc.morphologyEx(dst, dst, Imgproc.MORPH_CLOSE, element);
-		Imgproc.Canny(dst, edges, lowThresh, lowThresh*3, 3, true);
-
-		
-		Imgproc.findContours(edges, contoursWalls, new Mat(), Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_NONE);
-
-		
-		double areaLast = 0;
-		Point[] verticesLast = null;
-		RotatedRect rectLast = null;
-		
-		for (int i = 0; i < contoursWalls.size(); i++) {
-			
-			MatOfPoint2f temp = new MatOfPoint2f(contoursWalls.get(i).toArray());
-			MatOfPoint2f approxCurve = new MatOfPoint2f();
-			Imgproc.approxPolyDP(temp, approxCurve, Imgproc.arcLength(temp, true) * 0.02, true);
-			
-			RotatedRect rect = Imgproc.minAreaRect(new MatOfPoint2f(contoursWalls.get(i).toArray()));
-			Point[] vertices = new Point[4];  
-	        rect.points(vertices);
-	        
-			double area = rect.size.width * rect.size.height;
-			
-			if(area > areaLast) {
-	        	verticesLast = vertices;
-		        rectLast = rect;
-				areaLast = area;
-			}
-		}
-		
-		if(verticesLast != null && rectLast != null) {
-			return verticesLast;
-			}
-		System.out.println("Sender ikke nogle hjørner");
-		return null;
-		
-	}*/
 	
 	private void warpImage(Point[] verticesLast) {
 		
@@ -1078,71 +964,7 @@ public class CamController {
 			
 			
 			Imgproc.warpPerspective(matFrame, matFrame, perspectiveTransform, new Size(width, height));
-			/*
-			MatOfByte matOfByteOrig = new MatOfByte();
-			MatOfByte matOfByteDist = new MatOfByte();
-			
-			Imgcodecs.imencode(".jpg", img, matOfByteOrig);
-			Imgcodecs.imencode(".jpg", newImg, matOfByteDist);
-			
-			byte[] byteArrayOrig = matOfByteOrig.toArray();
-			byte[] byteArrayDist = matOfByteDist.toArray();		
-			
-			BufferedImage bufImageOrig = null;
-			BufferedImage bufImageDist = null;
-
-			try {
-				InputStream inOrig = new ByteArrayInputStream(byteArrayOrig);			
-				bufImageOrig = ImageIO.read(inOrig);
 				
-				InputStream inDist = new ByteArrayInputStream(byteArrayDist);			
-				bufImageDist = ImageIO.read(inDist);
-				
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			
-			Image imageOrig = bufImageOrig.getScaledInstance(bufImageOrig.getWidth() / 2, bufImageOrig.getHeight() / 2, Image.SCALE_DEFAULT);
-			Image imageDist = bufImageDist.getScaledInstance(bufImageDist.getWidth() / 2, bufImageDist.getHeight() / 2, Image.SCALE_DEFAULT);
-			
-			JFrame frame = new JFrame();
-			frame.getContentPane().setLayout(new FlowLayout());
-			frame.getContentPane().add(new JLabel(new ImageIcon(imageOrig)));
-			frame.getContentPane().add(new JLabel(new ImageIcon(imageDist)));
-			frame.setPreferredSize(new Dimension(1920, 1080));
-			frame.pack();
-			frame.setVisible(true);
-			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-			*/
-			
-			//Point[] dst_arr = new Point[] {new Point(0,0), new Point(img.size().width,0), new Point(0,img.size().height), new Point(img.size().width, img.size().height)};
-			
-			//Mat dst_mat = dst_arr;
-			
-			/*Mat dst_mat=new Mat(1,4,CvType.CV_32FC2);
-		    dst_mat.put(0, 0, 3.4);
-		    dst_mat.put(0, 0, 3.4);
-		    dst_mat.put(0, 0, 3.4);
-		    dst_mat.put(0, 0, 3.4);
-		    */
-		    
-			//Mat perspectiveTransform = Imgproc.getPerspectiveTransform(verticesLast, dst_mat);
-			
-			/*
-			Mat src_mat=new Mat(1,4,CvType.CV_32FC2);
-			src_mat.put(0, 0, 3.4);
-			src_mat.put(0, 1, 3.4);
-			src_mat.put(0, 2, 3.4);
-			src_mat.put(0, 3, 3.4);
-			*/
-			
-		    //src_mat.put(0, 0, verticesLast[2].x, verticesLast[2].y, verticesLast[3].x, verticesLast[3].y, verticesLast[1].x, verticesLast[1].y, verticesLast[0].x, verticesLast[0].y);
-		    //dst_mat.put(0, 0, 0.0, 0.0, rectLast.size.height, 0.0, 0.0, rectLast.size.width, rectLast.size.height, rectLast.size.width);
-		    //Mat perspectiveTransform = Imgproc.getPerspectiveTransform(src_mat, dst_mat);
-
-		    //Imgproc.warpPerspective(img, img, perspectiveTransform, new Size(maxX - minX, maxY - minY));
-			
 		}
 		
 	}

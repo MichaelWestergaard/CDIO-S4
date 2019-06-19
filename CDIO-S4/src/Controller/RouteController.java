@@ -13,6 +13,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.opencv.core.Mat;
+
 import DTO.Ball;
 import DTO.Goal;
 import DTO.Obstacles;
@@ -56,12 +58,12 @@ public class RouteController {
 	//TODO: ROTATE SQUARE POINTS
 
 	public Map<String, Double> getInstruction(List<Ball> balls, Obstacles obstacle, Robot robot, Goal goal){
-		
+		operationNum = 0;
 		instructions = new HashMap<String, Double>();
 		this.obstacle = obstacle;
 		this.goal = goal;
 		this.robot = robot;
-		
+				
 		Collections.sort(balls, new Sort());
 				
 		int iterator = balls.size();
@@ -90,6 +92,7 @@ public class RouteController {
 	}
 	
 	private void instructionsToGoal() {
+		operationNum = 0;
 		instructions = new HashMap<String, Double>();
 		
 		boolean crossBlocking = false;
@@ -220,6 +223,7 @@ public class RouteController {
 		
 		if(!crossBlocking) {
 			addInstruction("rotate", robot.angleBetween(robot.getDirectionVector(), ball));
+			System.out.println(robot);
 			addInstruction("travel", robot.dist(ball));
 
 			// Set new robot coordinates and new direction
