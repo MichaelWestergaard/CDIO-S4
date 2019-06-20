@@ -81,7 +81,7 @@ public class CamController {
     private Vector<Point> corners, target;
     private double minXVal, maxXVal, width, minYVal, maxYVal, height;
     private Mat perspectiveTransform;
-    private double cameraHeight = 150;
+    private double cameraHeight = 166.5;
     int counter = 0 ;
     double distRobot = 0.0;
     
@@ -501,8 +501,8 @@ public class CamController {
 	}
 	
 	private void fixCoordinates(List<Ball> balls, Obstacles obstacle, Robot robot, Goal goal) {
-		double gridSizeHorizontal = matFrame.width()/180;
-		double gridSizeVertical = matFrame.height()/120;
+		double gridSizeHorizontal = matFrame.width()/167;
+		double gridSizeVertical = matFrame.height()/122;
 		
 		if(robot != null) {
 			int botX = (int) Math.round(robot.x/gridSizeHorizontal);
@@ -539,7 +539,7 @@ public class CamController {
 			int x = (int) Math.round(goal.x/gridSizeHorizontal);
 			int y = (int) Math.round(goal.y/gridSizeVertical);
 			
-			goal.setCoordinates(x-25, y-4);
+			goal.setCoordinates(x-20, y-2);
 		}
 		
 		for(Ball ball : balls) {
@@ -548,14 +548,14 @@ public class CamController {
 			if(x < 3) {
 				x = 3;
 			}
-			if(x > 179) {
-				x = 179;
+			if(x > 166) {
+				x = 166;
 			}
 			if(y < 2) {
 				y = 2;
 			}
-			if(y > 118) {
-				y = 118;
+			if(y > 120) {
+				y = 120;
 			}
 			ball.setCoordinates(x, y);
 		}
@@ -832,8 +832,8 @@ public class CamController {
 		}
 		
 		for (Ball ball : balls) {
-			Imgproc.circle(matFrame, new Point(ball.x, ball.y), 20, new Scalar(0, 0, 255));
-			Imgproc.putText(matFrame, "bold", new Point(ball.x, ball.y-20), 3, 1.5, new Scalar(0, 0, 255));
+			Imgproc.circle(matFrame, new Point(ball.x, ball.y), 5, new Scalar(0, 0, 255));
+			//Imgproc.putText(matFrame, "bold", new Point(ball.x, ball.y-20), 3, 1.5, new Scalar(0, 0, 255));
 		}
 		
 	}

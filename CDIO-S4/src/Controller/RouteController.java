@@ -90,11 +90,21 @@ public class RouteController {
 		//Fjern loop hvis den kun skal køre efter én bold
 		Collections.sort(balls, new Sort());
 		
+		for(Ball ball : balls) {
+			if(robot.dist(ball) < 10) {
+				balls.remove(i);
+				continue;
+			}
+			i++;
+		}
+		i=0;
+		
 		if(!balls.isEmpty()) {
 			Ball ball = balls.get(i);
 			getRoute(ball);
-			iterator = balls.size();
+			iterator = balls.size();	
 		}
+		
 		System.out.println("" + instructions);
 		return instructions;
 	}
@@ -325,7 +335,7 @@ public class RouteController {
 				}
 				
 				addInstruction("rotate", robot.angleBetween(robot.getDirectionVector(), currentPoint));
-				addInstruction("travel", robot.dist(currentPoint)-10);
+				addInstruction("travel", robot.dist(currentPoint));
 				
 				robot.getDirectionVector().setCoordinates((currentPoint.x * 2) - robot.x, (currentPoint.y * 2) - robot.y);
 				robot.setCoordinates(currentPoint.x, currentPoint.y);
@@ -335,7 +345,7 @@ public class RouteController {
 			System.out.println("finalDestination = " + finalDestination);
 			
 			addInstruction("rotate", robot.angleBetween(robot.getDirectionVector(), ball));
-			addInstruction("travel", robot.dist(ball));
+			addInstruction("traveS", robot.dist(ball)-10);
 			
 			robot.getDirectionVector().setCoordinates((ball.x * 2) - robot.x, (ball.y * 2) - robot.y);
 			
