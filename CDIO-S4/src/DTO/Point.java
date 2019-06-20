@@ -18,6 +18,17 @@ public class Point {
 		this.x = x;
 		this.y = y;
 	}
+		
+	public double[] createLine(Point point) {
+		
+		double a = point.y - y;
+		double b = x - point.x;
+		double c = a*x + b*y;
+		
+		double[] returnArray = {a, b, c};
+		
+		return returnArray;
+	}
 
 	public double dist(Point point) {
 		return Math.abs(Math.sqrt(Math.pow(point.x - x, 2) + Math.pow(point.y - y, 2)));
@@ -57,7 +68,13 @@ public class Point {
 		/*if(calcAngle(dpoint,ballpoint)>180) {
 			return Math.acos(360 - calcAngle(dpoint,ballpoint));
 		}*/
-		return calcAngle(dpoint,ballpoint);
+		return calcAngle(dpoint,ballpoint)*-1;
 
 	}
+
+	@Override
+	public String toString() {
+		return "Point [x=" + x + ", y=" + y + "]";
+	}
+	
 }

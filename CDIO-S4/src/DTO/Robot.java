@@ -7,6 +7,7 @@ import java.util.List;
 public class Robot extends Point {
 	
 	List<Ball> collectedBalls = new ArrayList<Ball>();
+	Direction directionVector;
 	
 	public Robot(double x, double y) {
 		super(x, y);
@@ -26,6 +27,14 @@ public class Robot extends Point {
 
 	public void collectBall(Ball ball) {
 		collectedBalls.add(ball);
+	}
+	
+	public Direction getDirectionVector() {
+		return directionVector;
+	}
+
+	public void setDirectionVector(Direction directionVector) {
+		this.directionVector = directionVector;
 	}
 
 	@Override
