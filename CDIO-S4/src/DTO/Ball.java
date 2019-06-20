@@ -26,28 +26,45 @@ public class Ball extends Point {
 	}
 	
 	public boolean isCloseToBorder() {
-		if(this.x < 10 || this.x > 157 || this.y < 10 || this.y > 112) {
+		if(this.x < 10 || this.x > 156 || this.y < 10 || this.y > 110) {
 			return true;
 		}
 			
 		return false;
 	}
 	
+	public String getClosestBorder() {
+		if(this.x < 10) {
+			return "venstre";
+		}
+		if(this.x > 156) {
+			return "højre";
+		}
+		if(this.y < 10) {
+			return "top";
+		}
+		if(this.y > 110) {
+			return "bund";
+		}
+		return null;
+		
+	}
+	
 	public boolean isInCorner() {
 		if(this.x < 10 && this.y < 10)
 			return true;
-		if(this.x < 10 && this.y > 112)
+		if(this.x < 10 && this.y > 110)
 			return true;
-		if(this.x > 157 && this.y < 10)
+		if(this.x > 156 && this.y < 10)
 			return true;
-		if(this.x > 157 && this.y > 112)
+		if(this.x > 156 && this.y > 110)
 			return true;
 		
 		return false;
 	}
 	
-	public Point getCircleLineIntersectionPoint(Robot robot) {
-		double radius = 14;
+	public Point getCircleLineIntersectionPoint(Robot robot, double radius) {
+		//double radius = 14;
 		
         double baX = this.x - robot.x;
         double baY = this.y - robot.y;
