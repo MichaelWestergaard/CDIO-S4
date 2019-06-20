@@ -13,8 +13,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.opencv.core.Mat;
-
 import DTO.Ball;
 import DTO.Goal;
 import DTO.Obstacles;
@@ -58,8 +56,6 @@ public class RouteController {
 		}
 	}
 	
-	//TODO: ROTATE SQUARE POINTS
-
 	public Map<String, Double> getInstruction(List<Ball> loadBalls, Obstacles obstacleLoad, Robot robot, Goal goal){
 		operationNum = 0;
 		
@@ -80,8 +76,7 @@ public class RouteController {
 		goalPointHelper = new Point(goal.x-20,goal.y);
 		
 		Collections.sort(balls, new Sort());
-				
-		int iterator = balls.size();
+
 		int i = 0;
 		
 		System.out.println("Balls = " + balls);
@@ -91,7 +86,6 @@ public class RouteController {
 		System.out.println("robot = " + robot);		
 		System.out.println("Direction = " + robot.getDirectionVector());
 		
-		//Fjern loop hvis den kun skal køre efter én bold
 		Collections.sort(balls, new Sort());
 		
 		for(Ball ball : balls) {
@@ -106,7 +100,6 @@ public class RouteController {
 		if(!balls.isEmpty()) {
 			Ball ball = balls.get(i);
 			getRoute(ball);
-			iterator = balls.size();
 		}
 		System.out.println("" + instructions);
 		return instructions;
