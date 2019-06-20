@@ -81,7 +81,7 @@ public class CamController {
     private Vector<Point> corners, target;
     private double minXVal, maxXVal, width, minYVal, maxYVal, height;
     private Mat perspectiveTransform;
-    private double cameraHeight = 166.5;
+    private double cameraHeight = 165.5;
     int counter = 0 ;
     double distRobot = 0.0;
     
@@ -467,10 +467,15 @@ public class CamController {
 	        squarePoints.add(new DTO.Point(squarePoints.get(0).x + obstacle.getDiameter(), squarePoints.get(0).y + obstacle.getDiameter()));
 	        */
 	        
-	        squarePoints.add(new DTO.Point((obstacle.x - (obstacle.getDiameter()*1.1)), (obstacle.y - (obstacle.getDiameter()*1.1))));
-	        squarePoints.add(new DTO.Point((obstacle.x + (obstacle.getDiameter()*1.1)), (obstacle.y - (obstacle.getDiameter()*1.1))));
-	        squarePoints.add(new DTO.Point((obstacle.x - (obstacle.getDiameter()*1.1)), (obstacle.y + (obstacle.getDiameter()*1.1))));
-	        squarePoints.add(new DTO.Point((obstacle.x + (obstacle.getDiameter()*1.1)), (obstacle.y + (obstacle.getDiameter()*1.1))));
+	        squarePoints.add(new DTO.Point((obstacle.x - (obstacle.getDiameter()*0.8)), (obstacle.y - (obstacle.getDiameter()*0.8))));
+	        squarePoints.add(new DTO.Point((obstacle.x + (obstacle.getDiameter()*0.8)), (obstacle.y - (obstacle.getDiameter()*0.8))));
+	        squarePoints.add(new DTO.Point((obstacle.x - (obstacle.getDiameter()*0.8)), (obstacle.y + (obstacle.getDiameter()*0.8))));
+	        squarePoints.add(new DTO.Point((obstacle.x + (obstacle.getDiameter()*0.8)), (obstacle.y + (obstacle.getDiameter()*0.8))));
+	        
+	        Point point1 = new Point((obstacle.x - (obstacle.getDiameter()*0.8))*gridSizeHorizontal, ((obstacle.y - (obstacle.getDiameter()*0.8))*gridSizeVertical));
+	        Point point2 = new Point((obstacle.x + (obstacle.getDiameter()*0.8))*gridSizeHorizontal, ((obstacle.y - (obstacle.getDiameter()*0.8))*gridSizeVertical));
+	        Point point3 = new Point((obstacle.x - (obstacle.getDiameter()*0.8))*gridSizeHorizontal, ((obstacle.y + (obstacle.getDiameter()*0.8))*gridSizeVertical));
+	        Point point4 = new Point((obstacle.x + (obstacle.getDiameter()*0.8))*gridSizeHorizontal, ((obstacle.y + (obstacle.getDiameter()*0.8))*gridSizeVertical));
 	        
 	        obstacle.setSquarePoints(squarePoints);	        
 
@@ -483,7 +488,11 @@ public class CamController {
 	        System.out.println("Getting instructions");
 			routeController.getInstruction(balls, obstacle, robot, goal);	
 	        
-			Imgproc.circle(matFrame, center, (int) obstacle.getDiameter()/2, new Scalar(255,255,255));			
+			Imgproc.circle(matFrame, center, (int) obstacle.getDiameter()/2, new Scalar(255,255,255));	
+			Imgproc.circle(matFrame, point1, (int) 5, new Scalar(255,255,255));
+			Imgproc.circle(matFrame, point2, (int) 5, new Scalar(255,255,255));
+			Imgproc.circle(matFrame, point3, (int) 5, new Scalar(255,255,255));
+			Imgproc.circle(matFrame, point4, (int) 5, new Scalar(255,255,255));
 		}
 		System.out.println("area, crossarea, isready, run: " + areaLast + " " + crossArea + " " + routeController.isReady() + " " + run);
 		
@@ -539,7 +548,7 @@ public class CamController {
 			int x = (int) Math.round(goal.x/gridSizeHorizontal);
 			int y = (int) Math.round(goal.y/gridSizeVertical);
 			
-			goal.setCoordinates(x-20, y-2);
+			goal.setCoordinates(x-15, y-4);
 		}
 		
 		for(Ball ball : balls) {
@@ -554,8 +563,8 @@ public class CamController {
 			if(y < 2) {
 				y = 2;
 			}
-			if(y > 120) {
-				y = 120;
+			if(y > 122) {
+				y = 122;
 			}
 			ball.setCoordinates(x, y);
 		}
@@ -684,9 +693,10 @@ public class CamController {
 		}
 		
 	}
-	private static DTO.Point projectObject(DTO.Point point, String objectType) {
+	private DTO.Point projectObject(DTO.Point point, String objectType) {
 		double pointHeight;
-		
+		double width = 83.5;
+		double length = 61;
 		DTO.Point returnPoint = new DTO.Point(0,0);
 		
 		if(objectType.equalsIgnoreCase("Robot")) {
@@ -695,25 +705,25 @@ public class CamController {
 			pointHeight = 4;
 		}
 		
-		double xDiff = Math.abs(point.x - 90);
-		double yDiff = Math.abs(point.y - 60);
+		double xDiff = Math.abs(point.x - width );
+		double yDiff = Math.abs(point.y - length);
 		
 		double fakeRadius = Math.sqrt(xDiff*xDiff + yDiff*yDiff);
-		double cameraAngel = Math.atan((fakeRadius/170));
+		double cameraAngel = Math.atan((fakeRadius/cameraHeight));
 		//cameraAngel = Math.toDegrees(cameraAngel);
 		/* ERROR STARTS HERE maybe*/
 		
 		double radiusDiff = Math.tan(cameraAngel)*pointHeight;
 		double realRadius = fakeRadius - radiusDiff;
 		
-		double slope = (point.y - 60)/(point.x - 90);
-		double intersect = 60 - slope * 90;
+		double slope = (point.y - length)/(point.x - width);
+		double intersect = length - slope * width;
 		
 		//double circleIntersect = Math.pow((x-90),2) + Math.pow((slope*x+intersect-60), 2) - realRadius*realRadius;
 		
 		double firstEquationPart = slope*slope + 1;
-		double secondEquationPart = 2*slope*(intersect-60)-180;
-		double thirdEquationPart = (intersect-60)*(intersect-60) - realRadius*realRadius + 8100;
+		double secondEquationPart = 2*slope*(intersect-length)-2*width;
+		double thirdEquationPart = (intersect-length)*(intersect-length) - realRadius*realRadius + width*width;
 		
 		double circleIntersectionPos = (0-secondEquationPart + (Math.sqrt((secondEquationPart * secondEquationPart - 4*firstEquationPart*thirdEquationPart))))/(2*firstEquationPart);
 		double circleIntersectionNeg = (0-secondEquationPart - Math.sqrt(Math.pow(secondEquationPart, 2) - 4*firstEquationPart*thirdEquationPart))/(2*firstEquationPart);
@@ -1006,33 +1016,5 @@ public class CamController {
 		//Calib3d.undistort(srcImg, matFrame, cameraMatrix, distCoeffs);
 		
 	}
-	
-	private void projectObject(Point point) {
-		double xDiff = Math.abs(point.x - 90);
-		double yDiff = Math.abs(point.y - 60);
-		
-		double fakeRadius = Math.sqrt(xDiff*xDiff + yDiff*yDiff);
-		double cameraAngel = Math.toDegrees(Math.atan((fakeRadius/cameraHeight)));
-		double radiusDiff = Math.toDegrees(Math.tan(cameraAngel)) * 37.4;
-		double realRadius = fakeRadius - radiusDiff;
-		
-		double slope = (point.y - 60)/(point.x - 90);
-		double intersect = 60 - slope * 90;
-		
-		//double circleIntersect = Math.pow((x-90),2) + Math.pow((slope*x+intersect-60), 2) - realRadius*realRadius;
-		
-		double firstEquationPart = slope*slope + 1;
-		double secondEquationPart = 2*slope*(intersect-60)-180;
-		double thirdEquationPart = (intersect-60)*(intersect-60) - realRadius*realRadius + 8100;
-		
-		double circleIntersectionPos = (-secondEquationPart + Math.sqrt(Math.pow(secondEquationPart, 2) - 4*firstEquationPart*thirdEquationPart))/2*firstEquationPart;
-		double circleIntersectionNeg = (-secondEquationPart - Math.sqrt(Math.pow(secondEquationPart, 2) - 4*firstEquationPart*thirdEquationPart))/2*firstEquationPart;
-		
-		System.out.println("First intersection x-coordinate" + circleIntersectionPos);
-		System.out.println("Second intersection x-coordinate" + circleIntersectionNeg);
-		
-		
-	}
-	
 }
 

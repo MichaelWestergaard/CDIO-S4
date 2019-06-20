@@ -24,7 +24,7 @@ public class Ball extends Point {
 	}
 	
 	public boolean isCloseToBorder() {
-		if(this.x < 10 || this.x > 156 || this.y < 10 || this.y > 110) {
+		if(this.x < 18 || this.x > 148 || this.y < 18 || this.y > 104) {
 			return true;
 		}
 			
@@ -32,16 +32,16 @@ public class Ball extends Point {
 	}
 	
 	public String getClosestBorder() {
-		if(this.x < 10) {
+		if(this.x < 18) {
 			return "venstre";
 		}
-		if(this.x > 156) {
+		if(this.x > 148) {
 			return "højre";
 		}
-		if(this.y < 10) {
+		if(this.y < 18) {
 			return "top";
 		}
-		if(this.y > 110) {
+		if(this.y > 104) {
 			return "bund";
 		}
 		return null;
@@ -49,13 +49,13 @@ public class Ball extends Point {
 	}
 	
 	public boolean isInCorner() {
-		if(this.x < 10 && this.y < 10)
+		if(this.x < 18 && this.y < 18)
 			return true;
-		if(this.x < 10 && this.y > 110)
+		if(this.x < 18 && this.y > 104)
 			return true;
-		if(this.x > 156 && this.y < 10)
+		if(this.x > 148 && this.y < 18)
 			return true;
-		if(this.x > 156 && this.y > 110)
+		if(this.x > 148 && this.y > 104)
 			return true;
 		
 		return false;

@@ -26,7 +26,7 @@ public class RouteController {
 	int operationNum = 0;
 	Map<String, Double> instructions = new HashMap<String, Double>();
 	List<Ball> balls = null;
-	Obstacles obstacle;
+	Obstacles obstacle = null;
 	Goal goal;
 	Robot robot;
 
@@ -60,9 +60,13 @@ public class RouteController {
 	
 	//TODO: ROTATE SQUARE POINTS
 
-	public Map<String, Double> getInstruction(List<Ball> loadBalls, Obstacles obstacle, Robot robot, Goal goal){
+	public Map<String, Double> getInstruction(List<Ball> loadBalls, Obstacles obstacleLoad, Robot robot, Goal goal){
 		operationNum = 0;
-		this.obstacle = obstacle;
+		
+		if(obstacle == null) {
+			this.obstacle = obstacleLoad;
+		}
+
 		this.goal = goal;
 		if(robot != null) {
 			this.robot = robot;
@@ -73,7 +77,7 @@ public class RouteController {
 		
 		instructions.clear();
 		
-		goalPointHelper = new Point(goal.x-10,goal.y);
+		goalPointHelper = new Point(goal.x-20,goal.y);
 		
 		Collections.sort(balls, new Sort());
 				
@@ -135,7 +139,7 @@ public class RouteController {
 			robot.setCoordinates(goalPointHelper.x, goalPointHelper.y);
 			
 			addInstruction("rotate", robot.angleBetween(robot.getDirectionVector(), goal));
-			addInstruction("travel", robot.dist(goal));
+			addInstruction("travel", 15);
 		} else {
 			System.out.println("goal Direct way is blocked, need to find an alternative route");	
 			
@@ -285,7 +289,7 @@ public class RouteController {
 
 					System.out.println("Kører til en bold i et hjørne");
 
-					addInstruction("travel", robot.dist(ball)-7);
+					addInstruction("travel", robot.dist(ball));
 
 					// Set new robot coordinates and new direction
 					robot.getDirectionVector().setCoordinates((ball.x * 2) - robot.x, (ball.y * 2) - robot.y);
@@ -297,16 +301,16 @@ public class RouteController {
 					System.out.println("Kører til en bold ved en bande");
 					switch (ball.getClosestBorder()) {
 					case "venstre":
-						borderHelper.setCoordinates(ball.x + 15, ball.y);
+						borderHelper.setCoordinates(ball.x + 27.5, ball.y);
 						break;
 					case "højre":
-						borderHelper.setCoordinates(ball.x -15, ball.y);
+						borderHelper.setCoordinates(ball.x -20, ball.y);
 						break;
 					case "top":
-						borderHelper.setCoordinates(ball.x, ball.y + 15);
+						borderHelper.setCoordinates(ball.x, ball.y + 27.5);
 						break;
 					case "bund":
-						borderHelper.setCoordinates(ball.x, ball.y - 15);
+						borderHelper.setCoordinates(ball.x, ball.y - 27.5);
 						break;
 					default:
 						System.out.println("Entered default in routeController getClosestBorder");
@@ -319,10 +323,10 @@ public class RouteController {
 					robot.getDirectionVector().setCoordinates((borderHelper.x * 2) - robot.x, (borderHelper.y * 2) - robot.y);
 					robot.setCoordinates(borderHelper.x, borderHelper.y);	
 				}
-				
+				System.out.println("Helper: " + borderHelper + "ball: " + ball + "robot: " + robot);
 				addInstruction("rotate", robot.angleBetween(robot.getDirectionVector(), ball));
-				addInstruction("traveS", robot.dist(ball)-7);
-				addInstruction("backwa", robot.dist(ball)-7);
+				addInstruction("traveS", 15);
+				addInstruction("backwa", 15);
 
 				robot.getDirectionVector().setCoordinates((ball.x * 2) - robot.x, (ball.y * 2) - robot.y);				
 				
@@ -386,7 +390,7 @@ public class RouteController {
 				}
 				
 				addInstruction("rotate", robot.angleBetween(robot.getDirectionVector(), currentPoint));
-				addInstruction("travel", robot.dist(currentPoint)-10);
+				addInstruction("travel", robot.dist(currentPoint));
 				
 				robot.getDirectionVector().setCoordinates((currentPoint.x * 2) - robot.x, (currentPoint.y * 2) - robot.y);
 				robot.setCoordinates(currentPoint.x, currentPoint.y);
@@ -440,8 +444,8 @@ public class RouteController {
 				}
 				
 				addInstruction("rotate", robot.angleBetween(robot.getDirectionVector(), ball));
-				addInstruction("traveS", robot.dist(ball)-7);
-				addInstruction("backwa", robot.dist(ball)-7);
+				addInstruction("traveS", robot.dist(ball)-23);
+				addInstruction("backwa", robot.dist(ball)-23);
 
 				robot.getDirectionVector().setCoordinates((ball.x * 2) - robot.x, (ball.y * 2) - robot.y);				
 				
