@@ -90,6 +90,15 @@ public class RouteController {
 		//Fjern loop hvis den kun skal køre efter én bold
 		Collections.sort(balls, new Sort());
 		
+		for(Ball ball : balls) {
+			if(robot.dist(ball) < 10) {
+				balls.remove(i);
+				continue;
+			}
+			i++;
+		}
+		i=0;
+		
 		if(!balls.isEmpty()) {
 			Ball ball = balls.get(i);
 			getRoute(ball);
