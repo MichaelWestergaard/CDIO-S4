@@ -79,6 +79,9 @@ public class CamController {
     private Vector<Point> corners, target;
     private double minXVal, maxXVal, width, minYVal, maxYVal, height;
     private Mat perspectiveTransform;
+    
+    int widthk = 167;
+    int heightk = 122;
 
     private double cameraHeight = 162.5;
     int counter = 0 ;
@@ -404,8 +407,8 @@ public class CamController {
 	        rect.points(vertices);
 			
 	        double diameter = 0.0;
-	        double gridSizeHorizontal = matFrame.width()/167;
-			double gridSizeVertical = matFrame.height()/122;
+	        double gridSizeHorizontal = matFrame.width()/widthk;
+			double gridSizeVertical = matFrame.height()/heightk;
 	        if(vertices != null) {
 				for(int i = 0; i < 4; i++) {
 					for(int j = 0; j < 4; j++) {						
@@ -479,8 +482,8 @@ public class CamController {
 	}
 	
 	private void fixCoordinates(List<Ball> balls, Obstacles obstacle, Robot robot, Goal goal) {
-		double gridSizeHorizontal = matFrame.width()/167;
-		double gridSizeVertical = matFrame.height()/122;
+		double gridSizeHorizontal = matFrame.width()/widthk;
+		double gridSizeVertical = matFrame.height()/heightk;
 		
 		if(robot != null) {
 			int botX = (int) Math.round(robot.x/gridSizeHorizontal);
