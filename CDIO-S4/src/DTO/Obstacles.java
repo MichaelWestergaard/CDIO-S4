@@ -30,7 +30,7 @@ public class Obstacles extends Point{
 	}
 	
 	public List<Point> getCircleLineIntersectionPoint(Point pointA, Point pointB) {
-		double radius = diameter/2;
+		double radius = diameter;
 		
         double baX = pointB.x - pointA.x;
         double baY = pointB.y - pointA.y;

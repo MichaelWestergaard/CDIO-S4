@@ -7,11 +7,13 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.lang.System;
 
 import org.opencv.core.Mat;
 
@@ -26,7 +28,7 @@ public class RouteController {
 	int operationNum = 0;
 	Map<String, Double> instructions = new HashMap<String, Double>();
 	List<Ball> balls = null;
-	Obstacles obstacle;
+	Obstacles obstacle = null;
 	Goal goal;
 	Robot robot;
 
@@ -41,6 +43,7 @@ public class RouteController {
 	Socket socket;
 	String readline;
 	boolean moreBalls = true;
+	int toGoalCounter = 0;
 		
 	public void socketInit() {
 		try {
@@ -60,9 +63,27 @@ public class RouteController {
 	
 	//TODO: ROTATE SQUARE POINTS
 
-	public Map<String, Double> getInstruction(List<Ball> loadBalls, Obstacles obstacle, Robot robot, Goal goal){
+	public Map<String, Double> getInstruction(List<Ball> loadBalls, Obstacles obstacleLoad, Robot robot, Goal goal){
 		operationNum = 0;
-		this.obstacle = obstacle;
+		
+		if(obstacle == null) {
+			this.obstacle = obstacleLoad;
+		}
+		List<Point> squarePoints = new ArrayList<Point>();
+		
+
+		Point point1 = new Point(obstacle.x-25, obstacle.y-25);
+		Point point2 = new Point(obstacle.x+25, obstacle.y-25);
+		Point point3 = new Point(obstacle.x-25, obstacle.y+25);
+		Point point4 = new Point(obstacle.x+25, obstacle.y+25);
+		
+		squarePoints.add(point1);
+		squarePoints.add(point2);
+		squarePoints.add(point3);
+		squarePoints.add(point4);
+
+		obstacle.setSquarePoints(squarePoints);
+
 		this.goal = goal;
 		if(robot != null) {
 			this.robot = robot;
@@ -73,7 +94,7 @@ public class RouteController {
 		
 		instructions.clear();
 		
-		goalPointHelper = new Point(goal.x-10,goal.y);
+		goalPointHelper = new Point(goal.x+20,goal.y);
 		
 		Collections.sort(balls, new Sort());
 				
@@ -90,16 +111,34 @@ public class RouteController {
 		//Fjern loop hvis den kun skal køre efter én bold
 		Collections.sort(balls, new Sort());
 		
+		/*for(int j = 0; i < balls.size(); j++) {
+			if(robot.dist(balls.get(j)) < 10) {
+				balls.remove(j);
+				continue;
+			}
+		}*/
+		
+		while(i < iterator) {
+			if(robot.dist(balls.get(i)) < 10) {
+				balls.remove(i);
+				iterator = balls.size();
+			} else {
+				i++;
+			}
+		}
+		
 		if(!balls.isEmpty()) {
-			Ball ball = balls.get(i);
+			Ball ball = balls.get(0);
 			getRoute(ball);
 			iterator = balls.size();
-		}
+		} 
 		System.out.println("" + instructions);
 		return instructions;
 	}
 	
 	private void instructionsToGoal() {
+		instructions.clear();
+		toGoalCounter++;
 		operationNum = 0;
 		instructions = new HashMap<String, Double>();
 		
@@ -126,7 +165,7 @@ public class RouteController {
 			robot.setCoordinates(goalPointHelper.x, goalPointHelper.y);
 			
 			addInstruction("rotate", robot.angleBetween(robot.getDirectionVector(), goal));
-			addInstruction("travel", robot.dist(goal));
+			addInstruction("travel", 15);
 		} else {
 			System.out.println("goal Direct way is blocked, need to find an alternative route");	
 			
@@ -177,7 +216,7 @@ public class RouteController {
 				}
 				
 				addInstruction("rotate", robot.angleBetween(robot.getDirectionVector(), currentPoint));
-				addInstruction("travel", robot.dist(currentPoint)-10);
+				addInstruction("travel", robot.dist(currentPoint));
 				robot.getDirectionVector().setCoordinates((currentPoint.x * 2) - robot.x, (currentPoint.y * 2) - robot.y);
 				robot.setCoordinates(currentPoint.x, currentPoint.y);
 				
@@ -192,7 +231,7 @@ public class RouteController {
 			robot.setCoordinates(goalPointHelper.x, goalPointHelper.y);
 			
 			addInstruction("rotate", robot.angleBetween(robot.getDirectionVector(), goal));
-			addInstruction("travel", robot.dist(goal));
+			addInstruction("traveS", robot.dist(goal));
 			
 			robot.getDirectionVector().setCoordinates((goal.x * 2) - robot.x, (goal.y * 2) - robot.y);
 			robot.setCoordinates(goal.x, goal.y);			
@@ -200,7 +239,9 @@ public class RouteController {
 			System.out.println("NewRobot =" + robot);
 		}
 		addInstruction("delive", 0.0);
-		sendInstructions();
+		addInstruction("backwa", 20.0);
+		robot.setCoordinates(goal.x + 20, goal.y);
+		//sendInstructions();
 	}
 	
 	public void sendInstructions() {
@@ -213,15 +254,23 @@ public class RouteController {
 		if (balls.size() == 0) {
 			// Find vej til mål
 			if (noBallsFoundCounter > 0) {
-				if(moreBalls) {
-					moreBalls = false;
+				if(toGoalCounter > 2) {
+					instructions.clear();
+					addInstruction("finish", 0.0);
+					long endTime = System.currentTimeMillis();
+					robot.setEndTime(endTime);
+					long secondsTotal = (endTime - robot.getStartTime()) / 1000;
+					long secondsSpent = secondsTotal % 60;
+					long minutesSpent = (secondsTotal - secondsSpent) / 60;
+					
+					System.out.println("Robot stopped, total time spent: " + minutesSpent + " min " + secondsSpent + " s");
+				} else {
+					System.out.println("Driving to goal");					
 					instructionsToGoal();
-					System.out.println("Driving to goal");
 				}
-				
 			} else {
 				noBallsFoundCounter++;
-				addInstruction("backwa", 20.0);
+				addInstruction("backwa", 10.0);
 				System.out.println("no more balls");
 			}
 		}
@@ -233,9 +282,13 @@ public class RouteController {
 			mapOutputStream.writeObject(instructions);
 		    mapOutputStream.flush();
 		    mapOutputStream.reset();
+
+		    if(instructions.containsKey("finish")) {
+		    	System.exit(0);
+		    }
 		    
 			instructions.clear();
-		    
+
 		    while(true) {
 		    	line = reader.readLine();
 		    	System.out.println(line);
@@ -253,6 +306,7 @@ public class RouteController {
 	}
 	
 	private boolean getRoute(Ball ball) {
+		toGoalCounter = 0;
 		boolean crossBlocking = false;
 
 		System.out.println("robot intersect " + robot + " checking ball " + ball);
@@ -267,43 +321,73 @@ public class RouteController {
 		}
 		
 		if(!crossBlocking) {
-			addInstruction("rotate", robot.angleBetween(robot.getDirectionVector(), ball));
-			System.out.println(robot);
-			
 			if(ball.isCloseToBorder()) {
-				if(ball.isInCorner()) {
+
+				Point borderHelper = new Point(0,0);
+
+			//	if(ball.isInCorner()) {
 					/* DO SOMETHING ELSE IN THE FUTURE*/
-					
-					addInstruction("travel", robot.dist(ball)-14);
+
+				/*	System.out.println("Kører til en bold i et hjørne");
+
+					addInstruction("travel", robot.dist(ball));
 
 					// Set new robot coordinates and new direction
 					robot.getDirectionVector().setCoordinates((ball.x * 2) - robot.x, (ball.y * 2) - robot.y);
-					
-					Point shorterRobotPoint = ball.getCircleLineIntersectionPoint(robot);
+
+					Point shorterRobotPoint = ball.getCircleLineIntersectionPoint(robot, 7);
 					robot.setCoordinates(shorterRobotPoint.x, shorterRobotPoint.y);					
-					
-				} else {
-					addInstruction("travel", robot.dist(ball)-14);
 
-					// Set new robot coordinates and new direction
-					robot.getDirectionVector().setCoordinates((ball.x * 2) - robot.x, (ball.y * 2) - robot.y);
-					
-					Point shorterRobotPoint = ball.getCircleLineIntersectionPoint(robot);
-					robot.setCoordinates(shorterRobotPoint.x, shorterRobotPoint.y);	
-				}
+				} else {*/
+					System.out.println("Kører til en bold ved en bande");
+					switch (ball.getClosestBorder()) {
+					case "venstre":
+						borderHelper.setCoordinates(ball.x + 27.5, ball.y);
+						break;
+					case "højre":
+						borderHelper.setCoordinates(ball.x -21, ball.y);
+						break;
+					case "top":
+						borderHelper.setCoordinates(ball.x, ball.y + 26.5);
+						break;
+					case "bund":
+						borderHelper.setCoordinates(ball.x, ball.y - 26.5);
+						break;
+					default:
+						System.out.println("Entered default in routeController getClosestBorder");
+						break;
+					}
+
+					addInstruction("rotate", robot.angleBetween(robot.getDirectionVector(), borderHelper));
+					addInstruction("travel", robot.dist(borderHelper));
+
+					robot.getDirectionVector().setCoordinates((borderHelper.x * 2) - robot.x, (borderHelper.y * 2) - robot.y);
+					robot.setCoordinates(borderHelper.x, borderHelper.y);	
+				//}
+				System.out.println("Helper: " + borderHelper + "ball: " + ball + "robot: " + robot);
+				addInstruction("rotate", robot.angleBetween(robot.getDirectionVector(), ball));
+				addInstruction("traveS", 17);
+				addInstruction("backwa", 17);
+
+				robot.getDirectionVector().setCoordinates((ball.x * 2) - robot.x, (ball.y * 2) - robot.y);				
+				
 			} else {
+				addInstruction("rotate", robot.angleBetween(robot.getDirectionVector(), ball));
 				addInstruction("travel", robot.dist(ball));
-
-				// Set new robot coordinates and new direction
-				robot.getDirectionVector().setCoordinates((ball.x * 2) - robot.x, (ball.y * 2) - robot.y);
+			
+				robot.getDirectionVector().setCoordinates((ball.x * 2) - robot.x, (ball.y * 2) - robot.y);				
 				robot.setCoordinates(ball.x, ball.y);
 			}
-			
+
 			return true;
-			
+
 		} else {
 			System.out.println("Direct way is blocked, need to find an alternative route");	
-						
+
+			for(Point point : obstacle.getSquarePoints()) {
+				System.out.println("getInstruction square: " + point);
+			}
+			
 			Point finalDestination = null;
 			double distance = Double.MAX_VALUE;
 			
@@ -351,7 +435,7 @@ public class RouteController {
 				}
 				
 				addInstruction("rotate", robot.angleBetween(robot.getDirectionVector(), currentPoint));
-				addInstruction("travel", robot.dist(currentPoint)-10);
+				addInstruction("travel", robot.dist(currentPoint));
 				
 				robot.getDirectionVector().setCoordinates((currentPoint.x * 2) - robot.x, (currentPoint.y * 2) - robot.y);
 				robot.setCoordinates(currentPoint.x, currentPoint.y);
@@ -360,46 +444,70 @@ public class RouteController {
 			}
 			System.out.println("finalDestination = " + finalDestination);
 			
-			addInstruction("rotate", robot.angleBetween(robot.getDirectionVector(), ball));
-			
 			if(ball.isCloseToBorder()) {
-				if(ball.isInCorner()) {
+
+				Point borderHelper = new Point(0,0);
+
+				//if(ball.isInCorner()) {
 					/* DO SOMETHING ELSE IN THE FUTURE*/
-					
-					addInstruction("travel", robot.dist(ball)-14);
+
+					/*System.out.println("Kører til en bold i et hjørne");
+
+					addInstruction("travel", robot.dist(ball)-7);
 
 					// Set new robot coordinates and new direction
 					robot.getDirectionVector().setCoordinates((ball.x * 2) - robot.x, (ball.y * 2) - robot.y);
-					
-					Point shorterRobotPoint = ball.getCircleLineIntersectionPoint(robot);
+
+					Point shorterRobotPoint = ball.getCircleLineIntersectionPoint(robot, 7);
 					robot.setCoordinates(shorterRobotPoint.x, shorterRobotPoint.y);					
-					
-				} else {
-					addInstruction("travel", robot.dist(ball)-14);
 
-					// Set new robot coordinates and new direction
-					robot.getDirectionVector().setCoordinates((ball.x * 2) - robot.x, (ball.y * 2) - robot.y);
-					
-					Point shorterRobotPoint = ball.getCircleLineIntersectionPoint(robot);
-					robot.setCoordinates(shorterRobotPoint.x, shorterRobotPoint.y);	
-				}
+				} else {*/
+					System.out.println("Kører til en bold ved en bande");
+					switch (ball.getClosestBorder()) {
+					case "venstre":
+						borderHelper.setCoordinates(ball.x + 15, ball.y);
+						break;
+					case "højre":
+						borderHelper.setCoordinates(ball.x -15, ball.y);
+						break;
+					case "top":
+						borderHelper.setCoordinates(ball.x, ball.y + 15);
+						break;
+					case "bund":
+						borderHelper.setCoordinates(ball.x, ball.y - 15);
+						break;
+					default:
+						System.out.println("Entered default in routeController getClosestBorder");
+						break;
+					}
+
+					addInstruction("rotate", robot.angleBetween(robot.getDirectionVector(), borderHelper));
+					addInstruction("travel", robot.dist(borderHelper));
+
+					robot.getDirectionVector().setCoordinates((borderHelper.x * 2) - robot.x, (borderHelper.y * 2) - robot.y);
+					robot.setCoordinates(borderHelper.x, borderHelper.y);	
+				//}
+				
+				addInstruction("rotate", robot.angleBetween(robot.getDirectionVector(), ball));
+				addInstruction("traveS", robot.dist(ball));
+				addInstruction("backwa", robot.dist(ball));
+
+				robot.getDirectionVector().setCoordinates((ball.x * 2) - robot.x, (ball.y * 2) - robot.y);				
+				
 			} else {
+				addInstruction("rotate", robot.angleBetween(robot.getDirectionVector(), ball));
 				addInstruction("travel", robot.dist(ball));
+			
+				robot.getDirectionVector().setCoordinates((ball.x * 2) - robot.x, (ball.y * 2) - robot.y);				
 
-				// Set new robot coordinates and new direction
-				robot.getDirectionVector().setCoordinates((ball.x * 2) - robot.x, (ball.y * 2) - robot.y);
-				robot.setCoordinates(ball.x, ball.y);
+				if(obstacle.isInside(ball)) {
+					addInstruction("travel", (robot.dist(ball))*-1);
+				} else {
+					robot.setCoordinates(ball.x, ball.y);
+				}	
 			}
 			
 			
-			//addInstruction("travel", robot.dist(ball));
-			//robot.getDirectionVector().setCoordinates((ball.x * 2) - robot.x, (ball.y * 2) - robot.y);
-			
-			if(obstacle.isInside(ball)) {
-				addInstruction("travel", (robot.dist(ball))*-1);
-			} else {
-				robot.setCoordinates(ball.x, ball.y);
-			}	
 			
 			System.out.println("NewRobot =" + robot);
 			

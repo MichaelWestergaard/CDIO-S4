@@ -7,12 +7,12 @@ import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Vector;
+import java.lang.System;
 
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -58,8 +58,6 @@ public class CamController {
     private JLabel imgDetectionLabel;
     private JLabel ballDetectionLabel;
 	
-    private int[][] map = null;
-    
 	private static List<Ball> balls = new ArrayList<Ball>();
 	private static List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
 	private static List<Ball> triangles = new ArrayList<Ball>();
@@ -68,24 +66,29 @@ public class CamController {
 	Mat imageWithGrid;
 	
 	private VideoCapture videoCapture;
-    private Mat matFrame, realImg;
+    private Mat matFrame;
     private CaptureTask captureTask;
     private Camera cameraSettings;
     private boolean useCam = true;
     private Mat mask, inRange, edges, ballsMask, robotMask;
-    private MapController mapController;
     private RouteController routeController = new RouteController();
     private boolean run = false;
     private boolean firstFrame = true;
+    private boolean squarePointsAccess = true;
     private Point topLeft, topRight, bottomLeft, bottomRight;
     private Vector<Point> corners, target;
     private double minXVal, maxXVal, width, minYVal, maxYVal, height;
     private Mat perspectiveTransform;
-    private double cameraHeight = 158;
+
+    private double cameraHeight = 165.5;
     int counter = 0 ;
     double distRobot = 0.0;
+    long startTime;
     
-    private FrameHelper frameHelper = new FrameHelper();
+    Obstacles obstacle;
+    Goal goal;
+    
+    private FrameController frameController = new FrameController();
     
     String imagePath = "Images/croosNotBlocking.jpg";
     
@@ -198,42 +201,42 @@ public class CamController {
         framePanel.add(imgDetectionLabel);
         videoFrame.getContentPane().add(framePanel, BorderLayout.CENTER);
         
-        JFrame menu = frameHelper.calibrationMenu();
+        JFrame menu = frameController.calibrationMenu();
         
-        frameHelper.minBallSize.setValue(cameraSettings.getMinBallSize());
-        frameHelper.maxBallSize.setValue(cameraSettings.getMaxBallSize());
-        frameHelper.lowHueWalls.setValue(cameraSettings.getLowHueWalls());
-        frameHelper.maxHueWalls.setValue(cameraSettings.getMaxHueWalls());
-        frameHelper.lowSatWalls.setValue(cameraSettings.getLowSatWalls());
-        frameHelper.maxSatWalls.setValue(cameraSettings.getMaxSatWalls());
-        frameHelper.lowValWalls.setValue(cameraSettings.getLowValWalls());
-        frameHelper.maxValWalls.setValue(cameraSettings.getMaxValWalls());
-        frameHelper.lowHueBalls.setValue(cameraSettings.getLowHueBalls());
-        frameHelper.maxHueBalls.setValue(cameraSettings.getMaxHueBalls());
-        frameHelper.lowSatBalls.setValue(cameraSettings.getLowSatBalls());
-        frameHelper.maxSatBalls.setValue(cameraSettings.getMaxSatBalls());
-        frameHelper.lowValBalls.setValue(cameraSettings.getLowValBalls());
-        frameHelper.maxValBalls.setValue(cameraSettings.getMaxValBalls());
+        frameController.minBallSize.setValue(cameraSettings.getMinBallSize());
+        frameController.maxBallSize.setValue(cameraSettings.getMaxBallSize());
+        frameController.lowHueWalls.setValue(cameraSettings.getLowHueWalls());
+        frameController.maxHueWalls.setValue(cameraSettings.getMaxHueWalls());
+        frameController.lowSatWalls.setValue(cameraSettings.getLowSatWalls());
+        frameController.maxSatWalls.setValue(cameraSettings.getMaxSatWalls());
+        frameController.lowValWalls.setValue(cameraSettings.getLowValWalls());
+        frameController.maxValWalls.setValue(cameraSettings.getMaxValWalls());
+        frameController.lowHueBalls.setValue(cameraSettings.getLowHueBalls());
+        frameController.maxHueBalls.setValue(cameraSettings.getMaxHueBalls());
+        frameController.lowSatBalls.setValue(cameraSettings.getLowSatBalls());
+        frameController.maxSatBalls.setValue(cameraSettings.getMaxSatBalls());
+        frameController.lowValBalls.setValue(cameraSettings.getLowValBalls());
+        frameController.maxValBalls.setValue(cameraSettings.getMaxValBalls());
         updateFrame();
 
         ChangeListener changeListener = new ChangeListener() {
 			
 			@Override
 			public void stateChanged(ChangeEvent e) {
-				cameraSettings.setMinBallSize(frameHelper.minBallSize.getValue());
-				cameraSettings.setMaxBallSize(frameHelper.maxBallSize.getValue());
-				cameraSettings.setLowHueWalls(frameHelper.lowHueWalls.getValue());
-				cameraSettings.setMaxHueWalls(frameHelper.maxHueWalls.getValue());
-				cameraSettings.setLowSatWalls(frameHelper.lowSatWalls.getValue());
-				cameraSettings.setMaxSatWalls(frameHelper.maxSatWalls.getValue());
-				cameraSettings.setLowValWalls(frameHelper.lowValWalls.getValue());
-				cameraSettings.setMaxValWalls(frameHelper.maxValWalls.getValue());
-				cameraSettings.setLowHueBalls(frameHelper.lowHueBalls.getValue());
-				cameraSettings.setMaxHueBalls(frameHelper.maxHueBalls.getValue());
-				cameraSettings.setLowSatBalls(frameHelper.lowSatBalls.getValue());
-				cameraSettings.setMaxSatBalls(frameHelper.maxSatBalls.getValue());
-				cameraSettings.setLowValBalls(frameHelper.lowValBalls.getValue());
-				cameraSettings.setMaxValBalls(frameHelper.maxValBalls.getValue());
+				cameraSettings.setMinBallSize(frameController.minBallSize.getValue());
+				cameraSettings.setMaxBallSize(frameController.maxBallSize.getValue());
+				cameraSettings.setLowHueWalls(frameController.lowHueWalls.getValue());
+				cameraSettings.setMaxHueWalls(frameController.maxHueWalls.getValue());
+				cameraSettings.setLowSatWalls(frameController.lowSatWalls.getValue());
+				cameraSettings.setMaxSatWalls(frameController.maxSatWalls.getValue());
+				cameraSettings.setLowValWalls(frameController.lowValWalls.getValue());
+				cameraSettings.setMaxValWalls(frameController.maxValWalls.getValue());
+				cameraSettings.setLowHueBalls(frameController.lowHueBalls.getValue());
+				cameraSettings.setMaxHueBalls(frameController.maxHueBalls.getValue());
+				cameraSettings.setLowSatBalls(frameController.lowSatBalls.getValue());
+				cameraSettings.setMaxSatBalls(frameController.maxSatBalls.getValue());
+				cameraSettings.setLowValBalls(frameController.lowValBalls.getValue());
+				cameraSettings.setMaxValBalls(frameController.maxValBalls.getValue());
 				
 				if(!useCam) {
 					matFrame = Imgcodecs.imread(imagePath);
@@ -244,13 +247,13 @@ public class CamController {
 			
 		};
 		
-		frameHelper.setListener(changeListener);
+		frameController.setListener(changeListener);
         
-        frameHelper.save.addActionListener(new ActionListener() {
+        frameController.save.addActionListener(new ActionListener() {
 			
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				Camera camera = new Camera(frameHelper.minBallSize.getValue(), frameHelper.maxBallSize.getValue(), frameHelper.lowHueWalls.getValue(), frameHelper.maxHueWalls.getValue(), frameHelper.lowSatWalls.getValue(), frameHelper.maxSatWalls.getValue(), frameHelper.lowValWalls.getValue(), frameHelper.maxValWalls.getValue(), frameHelper.lowHueBalls.getValue(), frameHelper.maxHueBalls.getValue(), frameHelper.lowSatBalls.getValue(), frameHelper.maxSatBalls.getValue(), frameHelper.lowValBalls.getValue(), frameHelper.maxValBalls.getValue());
+				Camera camera = new Camera(frameController.minBallSize.getValue(), frameController.maxBallSize.getValue(), frameController.lowHueWalls.getValue(), frameController.maxHueWalls.getValue(), frameController.lowSatWalls.getValue(), frameController.maxSatWalls.getValue(), frameController.lowValWalls.getValue(), frameController.maxValWalls.getValue(), frameController.lowHueBalls.getValue(), frameController.maxHueBalls.getValue(), frameController.lowSatBalls.getValue(), frameController.maxSatBalls.getValue(), frameController.lowValBalls.getValue(), frameController.maxValBalls.getValue());
 				
 				try {
 					File file = new File("camera_settings.xml");
@@ -263,6 +266,7 @@ public class CamController {
 					jaxbMarshaller.marshal(camera, file);
 					jaxbMarshaller.marshal(camera, System.out);
 					run = true;
+					startTime = System.currentTimeMillis();
 				} catch (JAXBException e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
@@ -288,18 +292,14 @@ public class CamController {
 	}
 	
 	private void updateFrame() {
-		realImg = matFrame.clone();
 		Mat capturedFrame = matFrame.clone();
 		mask = new Mat();
-		Mat threshold = new Mat();
 		edges = new Mat();
 		
 		Imgproc.blur(capturedFrame, capturedFrame, new Size(7,7));
 		
 		Imgproc.cvtColor(capturedFrame, mask, Imgproc.COLOR_BGR2HSV);
 		
-		//Imgproc.adaptiveThreshold(mask, threshold, 255, Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C, Imgproc.THRESH_BINARY, 11, 2);
-
 		inRange = new Mat();
 		
 		Scalar lower = new Scalar(cameraSettings.getLowHueWalls(), cameraSettings.getLowSatWalls(), cameraSettings.getLowValWalls());
@@ -347,28 +347,15 @@ public class CamController {
 				Imgproc.line(matFrame, verticesLast[j], verticesLast[(j+1)%4], new Scalar(0,255,0));
 				//Imgproc.putText(matFrame, verticesLast[j] + "", verticesLast[j], 2, 0.5, new Scalar(250,250,250));
 			}
-			/*
-			Mat src_mat=new Mat(4,1,CvType.CV_32FC2);
-		    Mat dst_mat=new Mat(4,1,CvType.CV_32FC2);
-
-		    src_mat.put(0, 0, verticesLast[2].x, verticesLast[2].y, verticesLast[3].x, verticesLast[3].y, verticesLast[1].x, verticesLast[1].y, verticesLast[0].x, verticesLast[0].y);
-		    dst_mat.put(0, 0, 0.0, 0.0, rectLast.size.height, 0.0, 0.0, rectLast.size.width, rectLast.size.height, rectLast.size.width);
-		    Mat perspectiveTransform = Imgproc.getPerspectiveTransform(src_mat, dst_mat);
-
-		    Imgproc.warpPerspective(matFrame, matFrame, perspectiveTransform, new Size(rectLast.size.height, rectLast.size.width));
-		    */
 			//undistortImage();
 			warpImage(verticesLast);
+			System.out.println("width "+ matFrame.width());
+			System.out.println("col " + matFrame.cols());
 		}
-		
-		//undistortImage();
-		//warpImage();
-		
 		findRobot(matFrame);
 		findBalls(matFrame);
 		
 		if(robot != null && directionPoint != null) {
-			mapController.robot = robot;
 			Imgproc.circle(matFrame, new Point(robot.x, robot.y), 2, new Scalar(0,0,255), Imgproc.FILLED);
 
 			Imgproc.line(matFrame, new Point(robot.x, robot.y), new Point(directionPoint.x, directionPoint.y), new Scalar(0,0,255));
@@ -384,8 +371,6 @@ public class CamController {
 		
 		Imgproc.cvtColor(capturedFrameCross, mask, Imgproc.COLOR_BGR2HSV);
 		
-		//Imgproc.adaptiveThreshold(mask, threshold, 255, Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C, Imgproc.THRESH_BINARY, 11, 2);
-
 		inRange = new Mat();
 		
         Core.inRange(mask, lower, upper, inRange);
@@ -405,7 +390,7 @@ public class CamController {
 			Imgproc.approxPolyDP(temp, approxCurve, Imgproc.arcLength(temp, true) * 0.004, true);
 			
 			double crossAreaLocal = Imgproc.contourArea(approxCurve);
-			if(crossAreaLocal > crossArea && crossAreaLocal >= (int)frameHelper.minCrossArea.getValue() && crossAreaLocal <= (int)frameHelper.maxCrossArea.getValue()) {
+			if(crossAreaLocal > crossArea && crossAreaLocal >= (int)frameController.minCrossArea.getValue() && crossAreaLocal <= (int)frameController.maxCrossArea.getValue()) {
 				crossArea = crossAreaLocal;
 				crossI = i;
 			}
@@ -421,8 +406,8 @@ public class CamController {
 	        rect.points(vertices);
 			
 	        double diameter = 0.0;
-	        double gridSizeHorizontal = matFrame.width()/180;
-			double gridSizeVertical = matFrame.height()/120;
+	        double gridSizeHorizontal = matFrame.width()/167;
+			double gridSizeVertical = matFrame.height()/122;
 	        if(vertices != null) {
 				for(int i = 0; i < 4; i++) {
 					for(int j = 0; j < 4; j++) {						
@@ -434,30 +419,10 @@ public class CamController {
 				}
 	        }
 	        
-	        Obstacles obstacle = new Obstacles(center.x/gridSizeHorizontal, center.y/gridSizeVertical);
+	        obstacle = new Obstacles(center.x/gridSizeHorizontal, center.y/gridSizeVertical);
 	        System.out.println("center: " + obstacle.x + " " + obstacle.x/gridSizeHorizontal + " " + center.x/gridSizeHorizontal + " " + center.x);
 	        obstacle.setDiameter(diameter);
 	        
-	        
-	        // Lav firkant rundt om cirkel
-	        
-	        // Find vinkel mellem toppunkt og x, y-radius vector
-	        Point topL = null;
-	        
-            //Skal måske ændres lidt
-	        /*
-	        for(Point point : contoursWalls.get(crossI).toList()) {
-	        	if(topL == null) {
-	        		topL = point;
-	        	} else {
-	        		if(point.y < topL.y) {
-	        			topL = point;
-	        		}
-	        	}
-	        }
-	        */
-	        
-	        //Imgproc.circle(matFrame, topL, 3, new Scalar(0,255, 0), Imgproc.FILLED);
 	        System.out.println("cam diameter: " + obstacle.getDiameter() + "obstacle " + center.x + " ");
 	        List<DTO.Point> squarePoints = new ArrayList<DTO.Point>();
 	        //Index0 = øverst venstre, index1 = øverst højre, index2 = nederst venstre, index3 = nederst højre
@@ -466,29 +431,47 @@ public class CamController {
 	        squarePoints.add(new DTO.Point(squarePoints.get(0).x, squarePoints.get(0).y + obstacle.getDiameter()));
 	        squarePoints.add(new DTO.Point(squarePoints.get(0).x + obstacle.getDiameter(), squarePoints.get(0).y + obstacle.getDiameter()));
 	        */
+	        System.out.println("obs1 : " + obstacle);
 	        
-	        squarePoints.add(new DTO.Point((obstacle.x - (obstacle.getDiameter()*1.1)), (obstacle.y - (obstacle.getDiameter()*1.1))));
-	        squarePoints.add(new DTO.Point((obstacle.x + (obstacle.getDiameter()*1.1)), (obstacle.y - (obstacle.getDiameter()*1.1))));
-	        squarePoints.add(new DTO.Point((obstacle.x - (obstacle.getDiameter()*1.1)), (obstacle.y + (obstacle.getDiameter()*1.1))));
-	        squarePoints.add(new DTO.Point((obstacle.x + (obstacle.getDiameter()*1.1)), (obstacle.y + (obstacle.getDiameter()*1.1))));
+	        if(!squarePointsAccess) {
+		        System.out.println("obs: " + obstacle);
+		        squarePoints.add(new DTO.Point((obstacle.x - 20), (obstacle.y - 20)));
+		        squarePoints.add(new DTO.Point((obstacle.x + 20), (obstacle.y - 20)));
+		        squarePoints.add(new DTO.Point((obstacle.x - 20), (obstacle.y + 30)));
+		        squarePoints.add(new DTO.Point((obstacle.x + 20), (obstacle.y + 30)));
+		        
+		        obstacle.setSquarePoints(squarePoints);	
+		        squarePointsAccess = false;
+	        }
 	        
-	        obstacle.setSquarePoints(squarePoints);	        
+	        Point point1 = new Point((obstacle.x*gridSizeHorizontal - 30*gridSizeHorizontal), ((obstacle.y*gridSizeVertical - 20*gridSizeVertical)));
+	        Point point2 = new Point((obstacle.x + (obstacle.getDiameter()/2))*gridSizeHorizontal, ((obstacle.y - (obstacle.getDiameter()/2))*gridSizeVertical));
+	        Point point3 = new Point((obstacle.x - (obstacle.getDiameter()/2))*gridSizeHorizontal, ((obstacle.y + (obstacle.getDiameter()/2))*gridSizeVertical));
+	        Point point4 = new Point((obstacle.x + (obstacle.getDiameter()/2))*gridSizeHorizontal, ((obstacle.y + (obstacle.getDiameter()/2))*gridSizeVertical));
+	        
+	             
 
 	        if(robot != null) {
 	        	robot.setDirectionVector(new Direction(directionPoint.x, directionPoint.y));
 	        }
-	        Goal goal = new Goal(matFrame.width(), (matFrame.height()/2));
+	        goal = new Goal(0, (matFrame.height()/2));
+
 	        fixCoordinates(balls, obstacle, robot, goal);
 
-	        System.out.println("Getting instructions");
-			routeController.getInstruction(balls, obstacle, robot, goal);	
 	        
-			Imgproc.circle(matFrame, center, (int) obstacle.getDiameter()/2, new Scalar(255,255,255));			
+			Imgproc.circle(matFrame, center, (int) obstacle.getDiameter()/2, new Scalar(255,255,255));	
+			/*Imgproc.circle(matFrame, point1, (int) 5, new Scalar(255,255,255));
+			Imgproc.circle(matFrame, point2, (int) 5, new Scalar(255,255,255));
+			Imgproc.circle(matFrame, point3, (int) 5, new Scalar(255,255,255));
+			Imgproc.circle(matFrame, point4, (int) 5, new Scalar(255,255,255));<*/
 		}
 		System.out.println("area, crossarea, isready, run: " + areaLast + " " + crossArea + " " + routeController.isReady() + " " + run);
 		
 		if(areaLast > 0 && crossArea > 0) {
 			if(routeController.isReady() && run) {
+
+		        System.out.println("Getting instructions");
+				routeController.getInstruction(balls, obstacle, robot, goal);	
 				routeController.sendInstructions();
 			}
 		}
@@ -501,8 +484,8 @@ public class CamController {
 	}
 	
 	private void fixCoordinates(List<Ball> balls, Obstacles obstacle, Robot robot, Goal goal) {
-		double gridSizeHorizontal = matFrame.width()/180;
-		double gridSizeVertical = matFrame.height()/120;
+		double gridSizeHorizontal = matFrame.width()/167;
+		double gridSizeVertical = matFrame.height()/122;
 		
 		if(robot != null) {
 			int botX = (int) Math.round(robot.x/gridSizeHorizontal);
@@ -522,7 +505,7 @@ public class CamController {
 			robot.getDirectionVector().setCoordinates(newDirection.x,newDirection.y);
 		}
 		
-		if(obstacle != null) {
+		/*if(obstacle != null && !obstacle.getSquarePoints().isEmpty()) {
 			//int x = (int) Math.round(obstacle.x/gridSizeHorizontal);
 			//int y = (int) Math.round(obstacle.y/gridSizeVertical);
 			//obstacle.setCoordinates(x, y);
@@ -533,13 +516,13 @@ public class CamController {
 				
 				//point.setCoordinates(x, y);
 			}
-		}
+		}*/
 		
 		if(goal != null) {
 			int x = (int) Math.round(goal.x/gridSizeHorizontal);
 			int y = (int) Math.round(goal.y/gridSizeVertical);
 			
-			goal.setCoordinates(x-25, y-4);
+			goal.setCoordinates(x+15, y);
 		}
 		
 		for(Ball ball : balls) {
@@ -548,14 +531,14 @@ public class CamController {
 			if(x < 3) {
 				x = 3;
 			}
-			if(x > 179) {
-				x = 179;
+			if(x > 166) {
+				x = 166;
 			}
 			if(y < 2) {
 				y = 2;
 			}
-			if(y > 118) {
-				y = 118;
+			if(y > 122) {
+				y = 122;
 			}
 			ball.setCoordinates(x, y);
 		}
@@ -587,9 +570,6 @@ public class CamController {
         Imgproc.Canny(robotMask, canny, lowThresh, lowThresh * 3, 3, false);
 		Imgproc.findContours(canny, contoursRoboto, new Mat(), Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
 
-		MatOfPoint2f matOfPoint2f = new MatOfPoint2f();
-		MatOfPoint2f approxCurve = new MatOfPoint2f();
-		
 		Imgproc.drawContours(matFrame, contoursRoboto, -1, new Scalar(255,0,0));
 		
 		double areaLast = 0;
@@ -612,8 +592,6 @@ public class CamController {
 			List<Point> pointsContour = contourLast.toList();
 		
 	        Collections.sort(pointsContour, new SortCoordinates());
-	        
-	        List<Point> triangle = new ArrayList<Point>();
 	        
 	        Point top = null, left = null, right = null;
 	        
@@ -676,7 +654,8 @@ public class CamController {
 	        	}
 	        	
 	        	robot = new Robot((top.x+right.x+left.x)/3, (top.y+right.y+left.y)/3);
-	        	//System.out.println("Robot coord: " + robot.x + " " + robot.y);
+	        	robot.setStartTime(startTime);
+	        	System.out.println("Robot coord: " + robot.x + " " + robot.y);
 	        	DTO.Point p = null;
 	        	p = projectObject(robot, "robot");
 	        	//System.out.println("findRobot new p: " + p.x + " " + p.y);
@@ -686,7 +665,8 @@ public class CamController {
 	}
 	private DTO.Point projectObject(DTO.Point point, String objectType) {
 		double pointHeight;
-		
+		double width = 83.5;
+		double length = 61;
 		DTO.Point returnPoint = new DTO.Point(0,0);
 		
 		if(objectType.equalsIgnoreCase("Robot")) {
@@ -695,57 +675,34 @@ public class CamController {
 			pointHeight = 4;
 		}
 		
-		double xDiff = Math.abs(point.x - 90);
-		double yDiff = Math.abs(point.y - 60);
+		double xDiff = Math.abs(point.x - width );
+		double yDiff = Math.abs(point.y - length);
 		
 		double fakeRadius = Math.sqrt(xDiff*xDiff + yDiff*yDiff);
 		double cameraAngel = Math.atan((fakeRadius/cameraHeight));
-		//cameraAngel = Math.toDegrees(cameraAngel);
-		/* ERROR STARTS HERE maybe*/
 		
 		double radiusDiff = Math.tan(cameraAngel)*pointHeight;
 		double realRadius = fakeRadius - radiusDiff;
 		
-		double slope = (point.y - 60)/(point.x - 90);
-		double intersect = 60 - slope * 90;
-		
-		//double circleIntersect = Math.pow((x-90),2) + Math.pow((slope*x+intersect-60), 2) - realRadius*realRadius;
+		double slope = (point.y - length)/(point.x - width);
+		double intersect = length - slope * width;
 		
 		double firstEquationPart = slope*slope + 1;
-		double secondEquationPart = 2*slope*(intersect-60)-180;
-		double thirdEquationPart = (intersect-60)*(intersect-60) - realRadius*realRadius + 8100;
+		double secondEquationPart = 2*slope*(intersect-length)-2*width;
+		double thirdEquationPart = (intersect-length)*(intersect-length) - realRadius*realRadius + width*width;
 		
 		double circleIntersectionPos = (0-secondEquationPart + (Math.sqrt((secondEquationPart * secondEquationPart - 4*firstEquationPart*thirdEquationPart))))/(2*firstEquationPart);
 		double circleIntersectionNeg = (0-secondEquationPart - Math.sqrt(Math.pow(secondEquationPart, 2) - 4*firstEquationPart*thirdEquationPart))/(2*firstEquationPart);
-		/*
-		System.out.println("fakeRadius: " + fakeRadius);
-		System.out.println("Camera Angel: " + cameraAngel);
-		System.out.println("radiusDiff: " + radiusDiff);
-		System.out.println("realRadius: " + realRadius);
-		System.out.println("slope: " + slope);
-		System.out.println("intersect: " + intersect);
-		System.out.println("a: " + firstEquationPart);
-		System.out.println("b: " + secondEquationPart);
-		System.out.println("c " + thirdEquationPart);
-		
-		System.out.println("First intersection x-coordinate: " + circleIntersectionPos);
-		System.out.println("Second intersection x-coordinate: " + circleIntersectionNeg);*/
 		
 		double yForPos = slope * circleIntersectionPos + intersect;
 		double yForNeg = slope * circleIntersectionNeg + intersect;
-		/*
-		System.out.println("y1: " + yForPos);
-		System.out.println("y2: " + yForNeg);*/
 		
 		DTO.Point pPos = new DTO.Point(circleIntersectionPos, yForPos);
 		DTO.Point pNeg = new DTO.Point(circleIntersectionNeg, yForNeg);
 		
 		double distToPPos = point.dist(pPos);
 		double distToPNeg = point.dist(pNeg);
-/*
-		System.out.println("dist pPos: " + distToPPos);
-		System.out.println("dist pNeg: " + distToPNeg);*/
-		
+
 		if(distToPNeg > distToPPos) {
 			returnPoint.setCoordinates(circleIntersectionPos, yForPos);
 			
@@ -774,10 +731,8 @@ public class CamController {
 	
 	private void findBalls(Mat matFrame) {
 		Mat matFrameCopy = matFrame.clone();
-		Mat mask = new Mat();
 		ballsMask = new Mat();
 		
-
 		Imgproc.blur(matFrameCopy, matFrameCopy, new Size(3,3));
 		
 		Imgproc.cvtColor(matFrameCopy, ballsMask, Imgproc.COLOR_BGR2GRAY);
@@ -801,8 +756,6 @@ public class CamController {
 		double minArea = Math.PI * (cameraSettings.getMinBallSize() * 0.9f) * (cameraSettings.getMinBallSize() * 0.9f); // minimal ball area
 		double maxArea = Math.PI * (cameraSettings.getMaxBallSize() * 1.1f) * (cameraSettings.getMaxBallSize() * 1.1f); // maximal ball area
 		
-		
-
 		for (int i = 0; i < contours.size(); i++) {
 			
 			
@@ -832,20 +785,10 @@ public class CamController {
 		}
 		
 		for (Ball ball : balls) {
-			Imgproc.circle(matFrame, new Point(ball.x, ball.y), 20, new Scalar(0, 0, 255));
-			Imgproc.putText(matFrame, "bold", new Point(ball.x, ball.y-20), 3, 1.5, new Scalar(0, 0, 255));
+			Imgproc.circle(matFrame, new Point(ball.x, ball.y), 5, new Scalar(0, 0, 255));
+			//Imgproc.putText(matFrame, "bold", new Point(ball.x, ball.y-20), 3, 1.5, new Scalar(0, 0, 255));
 		}
 		
-	}
-	
-	private static void showImage(Mat mat) {
-		JFrame f = new JFrame();
-		f.setTitle(mat + "");
-		f.add(new JPanel().add(new JLabel(new ImageIcon(HighGui.toBufferedImage(mat)))));
-		f.setSize((int)mat.size().width, (int)mat.size().height+50);
-		f.setVisible(true);
-
-        f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 	}
 	
 	public static Image toBufferedImage(Mat m){
@@ -863,16 +806,6 @@ public class CamController {
 
     }
 	
-	public MapController getMapController() {
-		return mapController;
-	}
-
-	public void setMapController(MapController mapController) {
-		this.mapController = mapController;
-	}
-
-
-
 	private class CaptureTask extends SwingWorker<Void, Mat> {
         @Override
         protected Void doInBackground() {
@@ -890,18 +823,13 @@ public class CamController {
         	
             Mat imgCapture = frames.get(frames.size() - 1);
             matFrame = imgCapture;
-
             
-            //Findwalls etc her
             updateFrame();
-            //findWalls();
             
             imgCaptureLabel.setIcon(new ImageIcon(HighGui.toBufferedImage(matFrame)));
             imgDetectionLabel.setIcon(new ImageIcon(HighGui.toBufferedImage(edges)));
             
             videoFrame.repaint();
-            
-            
         }
     }
 	
@@ -1010,33 +938,5 @@ public class CamController {
 		//Calib3d.undistort(srcImg, matFrame, cameraMatrix, distCoeffs);
 		
 	}
-	
-	private void projectObject(Point point) {
-		double xDiff = Math.abs(point.x - 90);
-		double yDiff = Math.abs(point.y - 60);
-		
-		double fakeRadius = Math.sqrt(xDiff*xDiff + yDiff*yDiff);
-		double cameraAngel = Math.toDegrees(Math.atan((fakeRadius/cameraHeight)));
-		double radiusDiff = Math.toDegrees(Math.tan(cameraAngel)) * 37.4;
-		double realRadius = fakeRadius - radiusDiff;
-		
-		double slope = (point.y - 60)/(point.x - 90);
-		double intersect = 60 - slope * 90;
-		
-		//double circleIntersect = Math.pow((x-90),2) + Math.pow((slope*x+intersect-60), 2) - realRadius*realRadius;
-		
-		double firstEquationPart = slope*slope + 1;
-		double secondEquationPart = 2*slope*(intersect-60)-180;
-		double thirdEquationPart = (intersect-60)*(intersect-60) - realRadius*realRadius + 8100;
-		
-		double circleIntersectionPos = (-secondEquationPart + Math.sqrt(Math.pow(secondEquationPart, 2) - 4*firstEquationPart*thirdEquationPart))/2*firstEquationPart;
-		double circleIntersectionNeg = (-secondEquationPart - Math.sqrt(Math.pow(secondEquationPart, 2) - 4*firstEquationPart*thirdEquationPart))/2*firstEquationPart;
-		
-		System.out.println("First intersection x-coordinate" + circleIntersectionPos);
-		System.out.println("Second intersection x-coordinate" + circleIntersectionNeg);
-		
-		
-	}
-	
 }
 
