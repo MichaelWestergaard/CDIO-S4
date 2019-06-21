@@ -80,7 +80,7 @@ public class CamController {
     private double minXVal, maxXVal, width, minYVal, maxYVal, height;
     private Mat perspectiveTransform;
 
-    private double cameraHeight = 165.5;
+    private double cameraHeight = 170;
     int counter = 0 ;
     double distRobot = 0.0;
     long startTime;
@@ -349,8 +349,6 @@ public class CamController {
 			}
 			//undistortImage();
 			warpImage(verticesLast);
-			System.out.println("width "+ matFrame.width());
-			System.out.println("col " + matFrame.cols());
 		}
 		findRobot(matFrame);
 		findBalls(matFrame);
@@ -420,7 +418,6 @@ public class CamController {
 	        }
 	        
 	        obstacle = new Obstacles(center.x/gridSizeHorizontal, center.y/gridSizeVertical);
-	        System.out.println("center: " + obstacle.x + " " + obstacle.x/gridSizeHorizontal + " " + center.x/gridSizeHorizontal + " " + center.x);
 	        obstacle.setDiameter(diameter);
 	        
 	        System.out.println("cam diameter: " + obstacle.getDiameter() + "obstacle " + center.x + " ");
@@ -431,8 +428,6 @@ public class CamController {
 	        squarePoints.add(new DTO.Point(squarePoints.get(0).x, squarePoints.get(0).y + obstacle.getDiameter()));
 	        squarePoints.add(new DTO.Point(squarePoints.get(0).x + obstacle.getDiameter(), squarePoints.get(0).y + obstacle.getDiameter()));
 	        */
-	        System.out.println("obs1 : " + obstacle);
-	        
 	        if(!squarePointsAccess) {
 		        System.out.println("obs: " + obstacle);
 		        squarePoints.add(new DTO.Point((obstacle.x - 20), (obstacle.y - 20)));
@@ -904,8 +899,6 @@ public class CamController {
 				
 				
 			}
-			
-			
 			Imgproc.warpPerspective(matFrame, matFrame, perspectiveTransform, new Size(width, height));
 				
 		}

@@ -33,11 +33,11 @@ public class FrameController extends JFrame {
 		
 		//Cross in the middle
 		minCrossArea = new JSpinner();
-		minCrossArea.setModel(new SpinnerNumberModel(2300, 0, 10000, 100));
+		minCrossArea.setModel(new SpinnerNumberModel(1700, 0, 10000, 100));
 		addToMainPanel(minCrossArea, "Min Cross Area");
 		
 		maxCrossArea = new JSpinner();
-		maxCrossArea.setModel(new SpinnerNumberModel(2000, 0, 10000, 100));
+		maxCrossArea.setModel(new SpinnerNumberModel(1900, 0, 10000, 100));
 		addToMainPanel(maxCrossArea, "Max Cross Area");
 		
 		//Walls		

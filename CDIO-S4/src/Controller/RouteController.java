@@ -44,6 +44,7 @@ public class RouteController {
 	String readline;
 	boolean moreBalls = true;
 	int toGoalCounter = 0;
+	boolean wentToGoalTime = false;
 		
 	public void socketInit() {
 		try {
@@ -111,6 +112,11 @@ public class RouteController {
 		//Fjern loop hvis den kun skal køre efter én bold
 		Collections.sort(balls, new Sort());
 		
+		if(goToGoalTime() && !wentToGoalTime) {
+			wentToGoalTime = true;
+			instructionsToGoal();
+		}
+		
 		/*for(int j = 0; i < balls.size(); j++) {
 			if(robot.dist(balls.get(j)) < 10) {
 				balls.remove(j);
@@ -119,7 +125,7 @@ public class RouteController {
 		}*/
 		
 		while(i < iterator) {
-			if(robot.dist(balls.get(i)) < 10) {
+			if(robot.dist(balls.get(i)) < 10 || obstacle.isInside(balls.get(i))) {
 				balls.remove(i);
 				iterator = balls.size();
 			} else {
@@ -242,6 +248,18 @@ public class RouteController {
 		addInstruction("backwa", 20.0);
 		robot.setCoordinates(goal.x + 20, goal.y);
 		//sendInstructions();
+	}
+	
+	private boolean goToGoalTime() {
+		long endTime = System.currentTimeMillis();
+		long secondsTotal = (endTime - robot.getStartTime()) / 1000;
+		long secondsSpent = secondsTotal % 60;
+		long minutesSpent = (secondsTotal - secondsSpent) / 60;
+		
+		if(minutesSpent > 3)
+			return true;
+		
+		return false;
 	}
 	
 	public void sendInstructions() {
