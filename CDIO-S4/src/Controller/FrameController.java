@@ -10,11 +10,10 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
 import javax.swing.JSpinner;
-import javax.swing.JTextField;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.event.ChangeListener;
 
-public class FrameHelper extends JFrame {
+public class FrameController extends JFrame {
 	
 	ActionListener btnListener;
 	
