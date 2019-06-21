@@ -10,17 +10,5 @@ tmp/
 *~.nib
 local.properties
 .loadpath
-.metadata
-.classpath
-.project
-.settings/
-bin/
-tmp/
-*.tmp
-*.bak
-*.swp
-*~.nib
-local.properties
-.loadpath
 log/
 target/

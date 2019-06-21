@@ -10,11 +10,10 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
 import javax.swing.JSpinner;
-import javax.swing.JTextField;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.event.ChangeListener;
 
-public class FrameHelper extends JFrame {
+public class FrameController extends JFrame {
 	
 	ActionListener btnListener;
 	
@@ -34,11 +33,11 @@ public class FrameHelper extends JFrame {
 		
 		//Cross in the middle
 		minCrossArea = new JSpinner();
-		minCrossArea.setModel(new SpinnerNumberModel(1000, 0, 10000, 100));
+		minCrossArea.setModel(new SpinnerNumberModel(1700, 0, 10000, 100));
 		addToMainPanel(minCrossArea, "Min Cross Area");
 		
 		maxCrossArea = new JSpinner();
-		maxCrossArea.setModel(new SpinnerNumberModel(2000, 0, 10000, 100));
+		maxCrossArea.setModel(new SpinnerNumberModel(1900, 0, 10000, 100));
 		addToMainPanel(maxCrossArea, "Max Cross Area");
 		
 		//Walls		
