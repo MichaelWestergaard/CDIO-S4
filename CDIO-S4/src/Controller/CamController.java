@@ -80,7 +80,7 @@ public class CamController {
     private double minXVal, maxXVal, width, minYVal, maxYVal, height;
     private Mat perspectiveTransform;
 
-    private double cameraHeight = 170;
+    private double cameraHeight = 162.5;
     int counter = 0 ;
     double distRobot = 0.0;
     long startTime;

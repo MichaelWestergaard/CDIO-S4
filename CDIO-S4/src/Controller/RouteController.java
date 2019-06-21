@@ -44,7 +44,9 @@ public class RouteController {
 	String readline;
 	boolean moreBalls = true;
 	int toGoalCounter = 0;
-	boolean wentToGoalTime = false;
+	boolean wentToGoalFirstTime = false;
+	boolean wentToGoalSecondTime = false;
+	boolean wentToGoalThirdTime = false;
 		
 	public void socketInit() {
 		try {
@@ -112,9 +114,17 @@ public class RouteController {
 		//Fjern loop hvis den kun skal køre efter én bold
 		Collections.sort(balls, new Sort());
 		
-		if(goToGoalTime() && !wentToGoalTime) {
-			wentToGoalTime = true;
-			instructionsToGoal();
+		if(goToGoalTime()) {
+			if(!wentToGoalFirstTime) {
+				wentToGoalFirstTime = true;
+				instructionsToGoal();
+			} else if(!wentToGoalSecondTime) {
+				wentToGoalSecondTime = true;
+				instructionsToGoal();
+			} else if(!wentToGoalThirdTime) {
+				wentToGoalThirdTime = true;
+				instructionsToGoal();
+			}
 		}
 		
 		/*for(int j = 0; i < balls.size(); j++) {
@@ -256,7 +266,7 @@ public class RouteController {
 		long secondsSpent = secondsTotal % 60;
 		long minutesSpent = (secondsTotal - secondsSpent) / 60;
 		
-		if(minutesSpent > 3)
+		if(minutesSpent > 3 || minutesSpent > 5 || minutesSpent > 7)
 			return true;
 		
 		return false;
