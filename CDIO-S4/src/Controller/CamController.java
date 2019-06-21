@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Vector;
+import java.lang.System;
 
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -77,6 +78,7 @@ public class CamController {
     private RouteController routeController = new RouteController();
     private boolean run = false;
     private boolean firstFrame = true;
+    private boolean squarePointsAccess = true;
     private Point topLeft, topRight, bottomLeft, bottomRight;
     private Vector<Point> corners, target;
     private double minXVal, maxXVal, width, minYVal, maxYVal, height;
@@ -84,6 +86,10 @@ public class CamController {
     private double cameraHeight = 165.5;
     int counter = 0 ;
     double distRobot = 0.0;
+    long startTime;
+    
+    Obstacles obstacle;
+    Goal goal;
     
     private FrameHelper frameHelper = new FrameHelper();
     
@@ -263,6 +269,7 @@ public class CamController {
 					jaxbMarshaller.marshal(camera, file);
 					jaxbMarshaller.marshal(camera, System.out);
 					run = true;
+					startTime = System.currentTimeMillis();
 				} catch (JAXBException e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
@@ -359,6 +366,8 @@ public class CamController {
 		    */
 			//undistortImage();
 			warpImage(verticesLast);
+			System.out.println("width "+ matFrame.width());
+			System.out.println("col " + matFrame.cols());
 		}
 		
 		//undistortImage();
@@ -421,8 +430,8 @@ public class CamController {
 	        rect.points(vertices);
 			
 	        double diameter = 0.0;
-	        double gridSizeHorizontal = matFrame.width()/180;
-			double gridSizeVertical = matFrame.height()/120;
+	        double gridSizeHorizontal = matFrame.width()/167;
+			double gridSizeVertical = matFrame.height()/122;
 	        if(vertices != null) {
 				for(int i = 0; i < 4; i++) {
 					for(int j = 0; j < 4; j++) {						
@@ -434,7 +443,7 @@ public class CamController {
 				}
 	        }
 	        
-	        Obstacles obstacle = new Obstacles(center.x/gridSizeHorizontal, center.y/gridSizeVertical);
+	        obstacle = new Obstacles(center.x/gridSizeHorizontal, center.y/gridSizeVertical);
 	        System.out.println("center: " + obstacle.x + " " + obstacle.x/gridSizeHorizontal + " " + center.x/gridSizeHorizontal + " " + center.x);
 	        obstacle.setDiameter(diameter);
 	        
@@ -466,38 +475,48 @@ public class CamController {
 	        squarePoints.add(new DTO.Point(squarePoints.get(0).x, squarePoints.get(0).y + obstacle.getDiameter()));
 	        squarePoints.add(new DTO.Point(squarePoints.get(0).x + obstacle.getDiameter(), squarePoints.get(0).y + obstacle.getDiameter()));
 	        */
+	        System.out.println("obs1 : " + obstacle);
 	        
-	        squarePoints.add(new DTO.Point((obstacle.x - (obstacle.getDiameter()*0.8)), (obstacle.y - (obstacle.getDiameter()*0.8))));
-	        squarePoints.add(new DTO.Point((obstacle.x + (obstacle.getDiameter()*0.8)), (obstacle.y - (obstacle.getDiameter()*0.8))));
-	        squarePoints.add(new DTO.Point((obstacle.x - (obstacle.getDiameter()*0.8)), (obstacle.y + (obstacle.getDiameter()*0.8))));
-	        squarePoints.add(new DTO.Point((obstacle.x + (obstacle.getDiameter()*0.8)), (obstacle.y + (obstacle.getDiameter()*0.8))));
+	        if(!squarePointsAccess) {
+		        System.out.println("obs: " + obstacle);
+		        squarePoints.add(new DTO.Point((obstacle.x - 20), (obstacle.y - 20)));
+		        squarePoints.add(new DTO.Point((obstacle.x + 20), (obstacle.y - 20)));
+		        squarePoints.add(new DTO.Point((obstacle.x - 20), (obstacle.y + 30)));
+		        squarePoints.add(new DTO.Point((obstacle.x + 20), (obstacle.y + 30)));
+		        
+		        obstacle.setSquarePoints(squarePoints);	
+		        squarePointsAccess = false;
+	        }
 	        
-	        Point point1 = new Point((obstacle.x - (obstacle.getDiameter()*0.8))*gridSizeHorizontal, ((obstacle.y - (obstacle.getDiameter()*0.8))*gridSizeVertical));
-	        Point point2 = new Point((obstacle.x + (obstacle.getDiameter()*0.8))*gridSizeHorizontal, ((obstacle.y - (obstacle.getDiameter()*0.8))*gridSizeVertical));
-	        Point point3 = new Point((obstacle.x - (obstacle.getDiameter()*0.8))*gridSizeHorizontal, ((obstacle.y + (obstacle.getDiameter()*0.8))*gridSizeVertical));
-	        Point point4 = new Point((obstacle.x + (obstacle.getDiameter()*0.8))*gridSizeHorizontal, ((obstacle.y + (obstacle.getDiameter()*0.8))*gridSizeVertical));
+	        Point point1 = new Point((obstacle.x*gridSizeHorizontal - 30*gridSizeHorizontal), ((obstacle.y*gridSizeVertical - 20*gridSizeVertical)));
+	        Point point2 = new Point((obstacle.x + (obstacle.getDiameter()/2))*gridSizeHorizontal, ((obstacle.y - (obstacle.getDiameter()/2))*gridSizeVertical));
+	        Point point3 = new Point((obstacle.x - (obstacle.getDiameter()/2))*gridSizeHorizontal, ((obstacle.y + (obstacle.getDiameter()/2))*gridSizeVertical));
+	        Point point4 = new Point((obstacle.x + (obstacle.getDiameter()/2))*gridSizeHorizontal, ((obstacle.y + (obstacle.getDiameter()/2))*gridSizeVertical));
 	        
-	        obstacle.setSquarePoints(squarePoints);	        
+	             
 
 	        if(robot != null) {
 	        	robot.setDirectionVector(new Direction(directionPoint.x, directionPoint.y));
 	        }
-	        Goal goal = new Goal(matFrame.width(), (matFrame.height()/2));
+	        goal = new Goal(0, (matFrame.height()/2));
 	        fixCoordinates(balls, obstacle, robot, goal);
+	        
 
-	        System.out.println("Getting instructions");
-			routeController.getInstruction(balls, obstacle, robot, goal);	
+
 	        
 			Imgproc.circle(matFrame, center, (int) obstacle.getDiameter()/2, new Scalar(255,255,255));	
-			Imgproc.circle(matFrame, point1, (int) 5, new Scalar(255,255,255));
+			/*Imgproc.circle(matFrame, point1, (int) 5, new Scalar(255,255,255));
 			Imgproc.circle(matFrame, point2, (int) 5, new Scalar(255,255,255));
 			Imgproc.circle(matFrame, point3, (int) 5, new Scalar(255,255,255));
-			Imgproc.circle(matFrame, point4, (int) 5, new Scalar(255,255,255));
+			Imgproc.circle(matFrame, point4, (int) 5, new Scalar(255,255,255));<*/
 		}
 		System.out.println("area, crossarea, isready, run: " + areaLast + " " + crossArea + " " + routeController.isReady() + " " + run);
 		
 		if(areaLast > 0 && crossArea > 0) {
 			if(routeController.isReady() && run) {
+
+		        System.out.println("Getting instructions");
+				routeController.getInstruction(balls, obstacle, robot, goal);	
 				routeController.sendInstructions();
 			}
 		}
@@ -531,7 +550,7 @@ public class CamController {
 			robot.getDirectionVector().setCoordinates(newDirection.x,newDirection.y);
 		}
 		
-		if(obstacle != null) {
+		/*if(obstacle != null && !obstacle.getSquarePoints().isEmpty()) {
 			//int x = (int) Math.round(obstacle.x/gridSizeHorizontal);
 			//int y = (int) Math.round(obstacle.y/gridSizeVertical);
 			//obstacle.setCoordinates(x, y);
@@ -542,13 +561,13 @@ public class CamController {
 				
 				//point.setCoordinates(x, y);
 			}
-		}
+		}*/
 		
 		if(goal != null) {
 			int x = (int) Math.round(goal.x/gridSizeHorizontal);
 			int y = (int) Math.round(goal.y/gridSizeVertical);
 			
-			goal.setCoordinates(x-15, y-4);
+			goal.setCoordinates(x+15, y);
 		}
 		
 		for(Ball ball : balls) {
@@ -685,6 +704,7 @@ public class CamController {
 	        	}
 	        	
 	        	robot = new Robot((top.x+right.x+left.x)/3, (top.y+right.y+left.y)/3);
+	        	robot.setStartTime(startTime);
 	        	System.out.println("Robot coord: " + robot.x + " " + robot.y);
 	        	DTO.Point p = null;
 	        	p = projectObject(robot, "robot");
